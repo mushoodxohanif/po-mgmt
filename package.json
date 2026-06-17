@@ -15,7 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "backfill:part-specs": "bun scripts/backfill-part-specs.ts",
     "import:skus": "bun scripts/import-skus.ts",
-    "smoke:vendor-po": "bun scripts/smoke-test-vendor-po.ts"
+    "smoke:vendor-po": "bun scripts/smoke-test-vendor-po.ts",
+    "seed:vendor-pos": "bun scripts/seed-vendor-pos.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
