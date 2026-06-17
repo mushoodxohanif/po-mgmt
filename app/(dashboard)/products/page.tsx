@@ -2,9 +2,9 @@ import { DataTablePage } from "@/components/data-table/data-table-page";
 import { PageHeader } from "@/components/page-header";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ProductsDataTable } from "@/components/products/products-data-table";
-import { ImportAllSkusButton } from "@/components/products/sku-import-buttons";
+import { UploadSkuFilesButton } from "@/components/products/sku-import-buttons";
 import { createProduct } from "@/lib/actions/products";
-import { importAllSkusAction } from "@/lib/actions/sku-import";
+import { uploadSkuFilesAction } from "@/lib/actions/sku-import";
 import { getProductsPaginated } from "@/lib/data-table/list-queries";
 import { parsePaginationSearchParams } from "@/lib/data-table/pagination";
 
@@ -24,10 +24,10 @@ export default async function ProductsPage({
         <PageHeader
           className="mb-0"
           title="Products"
-          description="Manage products and view bill-of-materials imported from SKU files."
+          description="Manage products and their bill-of-materials."
         >
           <div className="flex flex-wrap items-center gap-2">
-            <ImportAllSkusButton action={importAllSkusAction} />
+            <UploadSkuFilesButton action={uploadSkuFilesAction} />
             <ProductFormDialog action={createProduct} />
           </div>
         </PageHeader>

@@ -30,14 +30,18 @@ Vendors → supply → Parts → make → Products → create → Purchase Order
 
 ## Product SKU Import
 
-Product definitions live in the [`/skus`](./skus) directory. Each Excel file represents a single product and lists the parts that make up that product. The application must:
+Products can be added in two ways:
 
-1. Ingest these Excel files
-2. Extract the necessary product and part information
-3. Persist that data to the database
-4. Extract embedded BOM images and upload them to imgbb (when `IMGBB_API_KEY` is set)
+1. **Manually** — Create a product with model code and display name, then build its BOM from existing parts (parts must exist in the catalog first).
+2. **Excel upload** — Upload one or more SKU spreadsheets (.xlsx) from the Products page. Each file represents a single product and lists the parts that make up that product.
 
-Import via CLI or from the Products page in the app.
+Excel import will:
+
+1. Extract product and part information from the spreadsheet
+2. Persist that data to the database
+3. Extract embedded BOM images and upload them to imgbb (when `IMGBB_API_KEY` is set)
+
+Bulk import is also available via CLI for one-off migrations from a local folder.
 
 ## Setup
 
@@ -67,13 +71,13 @@ Import via CLI or from the Products page in the app.
    bun run db:push
    ```
 
-4. Import SKU Excel files:
+4. (Optional) Bulk-import SKU Excel files from a local folder:
 
    ```bash
-   bun run import:skus
+   bun run import:skus /path/to/excel/files
    ```
 
-   Or use **Import all SKUs** on the Products page after starting the app.
+   Or use **Upload Excel files** on the Products page after starting the app.
 
 5. Start the development server:
 

@@ -91,7 +91,8 @@ export function InventoryDataTable({ result }: InventoryDataTableProps) {
       pageCount={result.pageCount}
       emptyState={{
         title: "No inventory records",
-        description: "Import SKUs or add parts first to track stock levels.",
+        description:
+          "Upload Excel files or add parts first to track stock levels.",
         icon: WarehouseIcon,
       }}
     />

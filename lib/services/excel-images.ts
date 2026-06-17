@@ -205,11 +205,10 @@ async function parseDrawingImages(
   return images;
 }
 
-export async function extractImagesFromXlsx(
-  filePath: string,
+export async function extractImagesFromXlsxBuffer(
+  fileBuffer: Buffer,
   validRows: Set<number>,
 ): Promise<ExtractImagesResult> {
-  const fileBuffer = await readFile(filePath);
   const zip = await JSZip.loadAsync(fileBuffer);
 
   const richValueImages = await parseRichValueImages(zip, validRows);
@@ -222,6 +221,14 @@ export async function extractImagesFromXlsx(
     images,
     imagesExtracted: images.length,
   };
+}
+
+export async function extractImagesFromXlsx(
+  filePath: string,
+  validRows: Set<number>,
+): Promise<ExtractImagesResult> {
+  const fileBuffer = await readFile(filePath);
+  return extractImagesFromXlsxBuffer(fileBuffer, validRows);
 }
 
 export type BomRowImageUrls = {

@@ -6,8 +6,9 @@ import { productParts, products } from "@/lib/db/schema";
 import {
   applyImageUrl,
   type BomRowImageUrls,
+  type ExtractedCellImage,
   emptyBomRowImageUrls,
-  extractImagesFromXlsx,
+  extractImagesFromXlsxBuffer,
 } from "@/lib/services/excel-images";
 import { getImgbbApiKey, uploadImageToImgbb } from "@/lib/services/imgbb";
 import { upsertPartFromImportLine } from "@/lib/services/parts-catalog";
@@ -198,6 +199,14 @@ export function parseSkuFile(filePath: string): ParsedSkuFile {
   return parseSkuWorkbook(workbook, fileName);
 }
 
+export function parseSkuBuffer(
+  buffer: Buffer,
+  fileName: string,
+): ParsedSkuFile {
+  const workbook = XLSX.read(buffer, { type: "buffer" });
+  return parseSkuWorkbook(workbook, fileName);
+}
+
 export type ImageUploadStats = {
   imagesExtracted: number;
   imagesUploaded: number;
@@ -205,16 +214,11 @@ export type ImageUploadStats = {
   imagesSkipped: boolean;
 };
 
-export async function attachImagesToParsedSku(
+async function uploadImagesForParsedSku(
   parsed: ParsedSkuFile,
-  filePath: string,
+  images: ExtractedCellImage[],
+  imagesExtracted: number,
 ): Promise<ImageUploadStats> {
-  const validRows = new Set(parsed.bomLines.map((line) => line.rowNumber));
-  const { images, imagesExtracted } = await extractImagesFromXlsx(
-    filePath,
-    validRows,
-  );
-
   const stats: ImageUploadStats = {
     imagesExtracted,
     imagesUploaded: 0,
@@ -267,6 +271,18 @@ export async function attachImagesToParsedSku(
   }
 
   return stats;
+}
+
+export async function attachImagesToParsedSkuFromBuffer(
+  parsed: ParsedSkuFile,
+  buffer: Buffer,
+): Promise<ImageUploadStats> {
+  const validRows = new Set(parsed.bomLines.map((line) => line.rowNumber));
+  const { images, imagesExtracted } = await extractImagesFromXlsxBuffer(
+    buffer,
+    validRows,
+  );
+  return uploadImagesForParsedSku(parsed, images, imagesExtracted);
 }
 
 async function upsertPart(
@@ -369,14 +385,13 @@ export async function importParsedSku(
   };
 }
 
-export async function importSkuFile(
-  filePath: string,
+export async function importSkuBuffer(
+  buffer: Buffer,
+  fileName: string,
 ): Promise<FileImportResult> {
-  const fileName = filePath.split(/[/\\]/).pop() ?? filePath;
-
   try {
-    const parsed = parseSkuFile(filePath);
-    const imageStats = await attachImagesToParsedSku(parsed, filePath);
+    const parsed = parseSkuBuffer(buffer, fileName);
+    const imageStats = await attachImagesToParsedSkuFromBuffer(parsed, buffer);
     const result = await importParsedSku(parsed);
     return {
       fileName,
@@ -401,6 +416,15 @@ export async function importSkuFile(
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+export async function importSkuFile(
+  filePath: string,
+): Promise<FileImportResult> {
+  const { readFile } = await import("node:fs/promises");
+  const fileName = filePath.split(/[/\\]/).pop() ?? filePath;
+  const buffer = await readFile(filePath);
+  return importSkuBuffer(buffer, fileName);
 }
 
 export async function importSkuDirectory(

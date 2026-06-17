@@ -9,7 +9,11 @@ async function main() {
     "../lib/services/sku-import"
   );
 
-  const skusDir = join(process.cwd(), "skus");
+  const directoryArg = process.argv[2];
+  const skusDir = directoryArg
+    ? join(process.cwd(), directoryArg)
+    : join(process.cwd(), "skus");
+
   const summary = await importSkuDirectory(skusDir);
 
   console.log(formatImportSummary(summary));

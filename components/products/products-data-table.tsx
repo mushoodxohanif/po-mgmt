@@ -7,7 +7,7 @@ import Link from "next/link";
 import { DataTable } from "@/components/data-table/data-table";
 import { DeleteConfirmButton } from "@/components/delete-confirm-button";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
-import { ImportAllSkusButton } from "@/components/products/sku-import-buttons";
+import { UploadSkuFilesButton } from "@/components/products/sku-import-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import {
   deleteProduct,
   updateProduct,
 } from "@/lib/actions/products";
-import { importAllSkusAction } from "@/lib/actions/sku-import";
+import { uploadSkuFilesAction } from "@/lib/actions/sku-import";
 import type { ProductListRow } from "@/lib/data-table/list-queries";
 import type { PaginatedResult } from "@/lib/data-table/pagination";
 
@@ -84,11 +84,11 @@ export function ProductsDataTable({ result }: ProductsDataTableProps) {
       emptyState={{
         title: "No products yet",
         description:
-          "Run a SKU import or add a product manually to get started.",
+          "Upload Excel BOM files or add a product manually to get started.",
         icon: BoxIcon,
         content: (
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <ImportAllSkusButton action={importAllSkusAction} />
+            <UploadSkuFilesButton action={uploadSkuFilesAction} />
             <ProductFormDialog action={createProduct} />
           </div>
         ),

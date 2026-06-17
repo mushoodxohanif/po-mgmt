@@ -171,7 +171,7 @@ export function OrderFormDialog({
             </div>
             {products.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No products available. Import SKUs or add products first.
+                No products available. Upload Excel files or add products first.
               </p>
             ) : (
               <div className="space-y-2">

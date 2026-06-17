@@ -97,7 +97,7 @@ export function PartsDataTable({ result }: PartsDataTableProps) {
       emptyState={{
         title: "No parts yet",
         description:
-          "Import SKUs from Excel or add parts manually to build your catalog.",
+          "Upload Excel BOM files or add parts manually to build your catalog.",
         icon: PuzzleIcon,
         content: <PartFormDialog action={createPart} />,
       }}

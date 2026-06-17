@@ -64,7 +64,7 @@ export function ProductFormDialog({
           <DialogDescription>
             {isEdit
               ? "Update product identifiers."
-              : "Create a product manually or import BOMs via SKU import."}
+              : "Create a product manually, then add its BOM by uploading an Excel file."}
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="grid gap-4">

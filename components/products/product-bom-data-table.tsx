@@ -117,7 +117,7 @@ export function ProductBomDataTable({ lines }: ProductBomDataTableProps) {
       emptyState={{
         title: "No BOM lines",
         description:
-          "Import this product from an SKU Excel file to populate its bill of materials.",
+          "Upload an Excel BOM file for this product to populate its bill of materials.",
         icon: ListTreeIcon,
       }}
     />

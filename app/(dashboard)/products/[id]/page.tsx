@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { ProductBomDataTable } from "@/components/products/product-bom-data-table";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
-import { ReimportProductSkuButton } from "@/components/products/sku-import-buttons";
+import { UploadProductBomButton } from "@/components/products/sku-import-buttons";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,10 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getProductById, updateProduct } from "@/lib/actions/products";
-import {
-  getSkuFileAvailability,
-  importProductSkuAction,
-} from "@/lib/actions/sku-import";
+import { uploadProductBomAction } from "@/lib/actions/sku-import";
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -30,8 +27,6 @@ export default async function ProductDetailPage({
 
   const product = await getProductById(id);
   if (!product) notFound();
-
-  const { hasSkuFile } = await getSkuFileAvailability(product.modelCode);
 
   const bomLines = [...product.productParts].sort((a, b) => {
     const aNo = a.itemNo ?? "";
@@ -49,10 +44,10 @@ export default async function ProductDetailPage({
 
       <PageHeader title={product.displayName} description={product.modelCode}>
         <div className="flex flex-wrap items-center gap-2">
-          <ReimportProductSkuButton
+          <UploadProductBomButton
+            productId={product.id}
             modelCode={product.modelCode}
-            hasSkuFile={hasSkuFile}
-            action={importProductSkuAction}
+            action={uploadProductBomAction}
           />
           <ProductFormDialog
             product={product}
@@ -74,8 +69,7 @@ export default async function ProductDetailPage({
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-medium">Bill of materials</h2>
         <p className="text-sm text-muted-foreground">
-          BOM lines are managed via SKU import. View part details to assign
-          vendors.
+          Upload an Excel BOM file or view part details to assign vendors.
         </p>
         <ProductBomDataTable lines={bomLines} />
       </section>
