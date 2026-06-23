@@ -5,9 +5,15 @@ import { FileTextIcon } from "lucide-react";
 import Link from "next/link";
 
 import { DataTable } from "@/components/data-table/data-table";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { Button } from "@/components/ui/button";
+import {
+  hasActiveListFilters,
+  type VendorPosListParams,
+} from "@/lib/data-table/list-params";
 import type { VendorPoListRow } from "@/lib/data-table/list-queries";
 import type { PaginatedResult } from "@/lib/data-table/pagination";
+import type { Vendor } from "@/lib/db/schema";
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -18,9 +24,21 @@ function formatDate(date: Date) {
 
 type VendorPosDataTableProps = {
   result: PaginatedResult<VendorPoListRow>;
+  listParams: VendorPosListParams;
+  vendors: Vendor[];
 };
 
-export function VendorPosDataTable({ result }: VendorPosDataTableProps) {
+const FILTERED_EMPTY_STATE = {
+  title: "No matching vendor POs",
+  description: "Try adjusting your search or filters.",
+  icon: FileTextIcon,
+};
+
+export function VendorPosDataTable({
+  result,
+  listParams,
+  vendors,
+}: VendorPosDataTableProps) {
   const columns: ColumnDef<VendorPoListRow>[] = [
     {
       accessorKey: "id",
@@ -77,19 +95,46 @@ export function VendorPosDataTable({ result }: VendorPosDataTableProps) {
     },
   ];
 
+  const isFiltered = hasActiveListFilters(listParams, ["q", "vendorId"]);
+
   return (
-    <DataTable
-      columns={columns}
-      data={result.rows}
-      page={result.page}
-      pageSize={result.pageSize}
-      totalCount={result.totalCount}
-      pageCount={result.pageCount}
-      emptyState={{
-        title: "No vendor POs",
-        description: "Create a vendor PO to order parts from a supplier.",
-        icon: FileTextIcon,
-      }}
-    />
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <DataTableToolbar
+        searchPlaceholder="Search by PO number or vendor name…"
+        searchValue={listParams.q ?? ""}
+        filters={[
+          {
+            key: "vendorId",
+            label: "Vendor",
+            placeholder: "Vendor",
+            value: listParams.vendorId
+              ? String(listParams.vendorId)
+              : undefined,
+            options: vendors.map((vendor) => ({
+              value: String(vendor.id),
+              label: vendor.name,
+            })),
+          },
+        ]}
+      />
+      <DataTable
+        columns={columns}
+        data={result.rows}
+        page={result.page}
+        pageSize={result.pageSize}
+        totalCount={result.totalCount}
+        pageCount={result.pageCount}
+        emptyState={
+          isFiltered
+            ? FILTERED_EMPTY_STATE
+            : {
+                title: "No vendor POs",
+                description:
+                  "Create a vendor PO to order parts from a supplier.",
+                icon: FileTextIcon,
+              }
+        }
+      />
+    </div>
   );
 }

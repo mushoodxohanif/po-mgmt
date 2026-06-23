@@ -3,16 +3,16 @@ import { PageHeader } from "@/components/page-header";
 import { VendorFormDialog } from "@/components/vendors/vendor-form-dialog";
 import { VendorsDataTable } from "@/components/vendors/vendors-data-table";
 import { createVendor } from "@/lib/actions/vendors";
+import { parseVendorsListParams } from "@/lib/data-table/list-params";
 import { getVendorsPaginated } from "@/lib/data-table/list-queries";
-import { parsePaginationSearchParams } from "@/lib/data-table/pagination";
 
 type VendorsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function VendorsPage({ searchParams }: VendorsPageProps) {
-  const pagination = parsePaginationSearchParams(await searchParams);
-  const result = await getVendorsPaginated(pagination);
+  const listParams = parseVendorsListParams(await searchParams);
+  const result = await getVendorsPaginated(listParams);
 
   return (
     <DataTablePage
@@ -26,7 +26,7 @@ export default async function VendorsPage({ searchParams }: VendorsPageProps) {
         </PageHeader>
       }
     >
-      <VendorsDataTable result={result} />
+      <VendorsDataTable result={result} listParams={listParams} />
     </DataTablePage>
   );
 }

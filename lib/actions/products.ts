@@ -9,7 +9,12 @@ import {
   actionSuccess,
 } from "@/lib/actions/types";
 import { db } from "@/lib/db";
-import { parts, productParts, products } from "@/lib/db/schema";
+import {
+  parts,
+  productParts,
+  products,
+  vendorPoVersionLines,
+} from "@/lib/db/schema";
 
 export type PartOptionForProduct = {
   id: number;
@@ -128,6 +133,7 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
   const id = Number(formData.get("id"));
   const modelCode = formData.get("modelCode");
   const displayName = formData.get("displayName");
+  const partIds = parsePartIds(formData);
 
   if (!Number.isFinite(id)) return actionError("Invalid product id");
   if (typeof modelCode !== "string" || !modelCode.trim()) {
@@ -147,17 +153,57 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
     return actionError("Another product with this model code already exists");
   }
 
+  if (partIds.length > 0) {
+    const existingParts = await db
+      .select({ id: parts.id })
+      .from(parts)
+      .where(inArray(parts.id, partIds));
+
+    if (existingParts.length !== partIds.length) {
+      return actionError("One or more selected parts no longer exist");
+    }
+  }
+
   try {
-    await db
-      .update(products)
-      .set({
-        modelCode: modelCode.trim(),
-        displayName: displayName.trim(),
-        updatedAt: new Date(),
-      })
-      .where(eq(products.id, id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(products)
+        .set({
+          modelCode: modelCode.trim(),
+          displayName: displayName.trim(),
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, id));
+
+      if (partIds.length > 0) {
+        const existingBom = await tx
+          .select({ partId: productParts.partId })
+          .from(productParts)
+          .where(eq(productParts.productId, id));
+
+        const existingPartIdSet = new Set(
+          existingBom.map((line) => line.partId),
+        );
+        const newPartIds = partIds.filter(
+          (partId) => !existingPartIdSet.has(partId),
+        );
+
+        if (newPartIds.length > 0) {
+          await tx.insert(productParts).values(
+            newPartIds.map((partId, index) => ({
+              productId: id,
+              partId,
+              quantity: 1,
+              itemNo: String(existingBom.length + index + 1),
+            })),
+          );
+        }
+      }
+    });
+
     revalidatePath("/products");
     revalidatePath(`/products/${id}`);
+    revalidatePath("/parts");
     return actionSuccess();
   } catch {
     return actionError("Failed to update product");
@@ -169,13 +215,49 @@ export async function deleteProduct(formData: FormData): Promise<ActionResult> {
   if (!Number.isFinite(id)) return actionError("Invalid product id");
 
   try {
-    await db.delete(products).where(eq(products.id, id));
+    await db.transaction(async (tx) => {
+      const bomRows = await tx
+        .select({ partId: productParts.partId })
+        .from(productParts)
+        .where(eq(productParts.productId, id));
+
+      const bomPartIds = [...new Set(bomRows.map((row) => row.partId))];
+
+      await tx.delete(products).where(eq(products.id, id));
+
+      if (bomPartIds.length === 0) return;
+
+      const stillLinkedRows = await tx
+        .select({ partId: productParts.partId })
+        .from(productParts)
+        .where(inArray(productParts.partId, bomPartIds));
+
+      const stillLinkedPartIds = new Set(
+        stillLinkedRows.map((row) => row.partId),
+      );
+
+      const vendorPoRows = await tx
+        .select({ partId: vendorPoVersionLines.partId })
+        .from(vendorPoVersionLines)
+        .where(inArray(vendorPoVersionLines.partId, bomPartIds));
+
+      const vendorPoPartIds = new Set(vendorPoRows.map((row) => row.partId));
+
+      const partIdsToDelete = bomPartIds.filter(
+        (partId) =>
+          !stillLinkedPartIds.has(partId) && !vendorPoPartIds.has(partId),
+      );
+
+      if (partIdsToDelete.length > 0) {
+        await tx.delete(parts).where(inArray(parts.id, partIdsToDelete));
+      }
+    });
+
     revalidatePath("/products");
+    revalidatePath("/parts");
     return actionSuccess();
   } catch {
-    return actionError(
-      "Failed to delete product. It may have BOM lines referencing parts.",
-    );
+    return actionError("Failed to delete product");
   }
 }
 

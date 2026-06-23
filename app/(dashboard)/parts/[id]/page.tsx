@@ -20,7 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getPartById, updatePart } from "@/lib/actions/parts";
+import {
+  getPartById,
+  getVendorsForPartSelection,
+  updatePart,
+} from "@/lib/actions/parts";
 import { formatPartSpecs } from "@/lib/services/part-specs";
 
 type PartDetailPageProps = {
@@ -34,6 +38,9 @@ export default async function PartDetailPage({ params }: PartDetailPageProps) {
 
   const part = await getPartById(id);
   if (!part) notFound();
+
+  const availableVendors = await getVendorsForPartSelection();
+  const assignedVendorIds = part.vendorParts.map((link) => link.vendorId);
 
   return (
     <>
@@ -54,6 +61,8 @@ export default async function PartDetailPage({ params }: PartDetailPageProps) {
         <PartFormDialog
           part={part}
           action={updatePart}
+          availableVendors={availableVendors}
+          assignedVendorIds={assignedVendorIds}
           triggerLabel="Edit part"
         />
       </PageHeader>

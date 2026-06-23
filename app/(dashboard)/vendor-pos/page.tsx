@@ -3,8 +3,8 @@ import { PageHeader } from "@/components/page-header";
 import { CreateVendorPoDialog } from "@/components/vendor-pos/create-vendor-po-dialog";
 import { VendorPosDataTable } from "@/components/vendor-pos/vendor-pos-data-table";
 import { getVendors } from "@/lib/actions/vendors";
+import { parseVendorPosListParams } from "@/lib/data-table/list-params";
 import { getVendorPosPaginated } from "@/lib/data-table/list-queries";
-import { parsePaginationSearchParams } from "@/lib/data-table/pagination";
 
 type VendorPosPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -13,9 +13,9 @@ type VendorPosPageProps = {
 export default async function VendorPosPage({
   searchParams,
 }: VendorPosPageProps) {
-  const pagination = parsePaginationSearchParams(await searchParams);
+  const listParams = parseVendorPosListParams(await searchParams);
   const [result, vendors] = await Promise.all([
-    getVendorPosPaginated(pagination),
+    getVendorPosPaginated(listParams),
     getVendors(),
   ]);
 
@@ -31,7 +31,11 @@ export default async function VendorPosPage({
         </PageHeader>
       }
     >
-      <VendorPosDataTable result={result} />
+      <VendorPosDataTable
+        result={result}
+        listParams={listParams}
+        vendors={vendors}
+      />
     </DataTablePage>
   );
 }

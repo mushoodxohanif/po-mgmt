@@ -58,6 +58,8 @@ export default async function ProductDetailPage({
           <ProductFormDialog
             product={product}
             action={updateProduct}
+            availableParts={availableParts}
+            existingPartIds={product.productParts.map((line) => line.partId)}
             triggerLabel="Edit product"
           />
         </div>

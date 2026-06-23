@@ -3,8 +3,9 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ClientTableToolbar } from "@/components/data-table/client-table-toolbar";
 import { DataTable } from "@/components/data-table/data-table";
 import { PartSpecsDisplay } from "@/components/parts/part-specs-display";
 
@@ -32,6 +33,10 @@ import {
   assignPartToVendor,
   removePartFromVendor,
 } from "@/lib/actions/vendors";
+import {
+  matchesSearch,
+  matchesSpecsSearch,
+} from "@/lib/data-table/client-filter";
 import type { Part } from "@/lib/db/schema";
 
 type AssignedPart = {
@@ -110,12 +115,21 @@ export function VendorPartAssignment({
 }: VendorPartAssignmentProps) {
   const router = useRouter();
   const [selectedPartId, setSelectedPartId] = useState<string>("");
+  const [search, setSearch] = useState("");
   const [pending, startTransition] = useTransition();
 
   const assignedIds = new Set(assignedParts.map((item) => item.partId));
   const unassignedParts = availableParts.filter(
     (part) => !assignedIds.has(part.id),
   );
+
+  const filteredAssignedParts = useMemo(() => {
+    return assignedParts.filter(
+      (item) =>
+        matchesSearch([item.part.name], search) ||
+        matchesSpecsSearch(item.part.specs, item.part.description, search),
+    );
+  }, [assignedParts, search]);
 
   function handleAssign() {
     if (!selectedPartId) return;
@@ -207,18 +221,32 @@ export function VendorPartAssignment({
         </Button>
       </div>
 
+      <ClientTableToolbar
+        searchPlaceholder="Search assigned parts by name or specifications…"
+        searchValue={search}
+        onSearchChange={setSearch}
+      />
+
       <DataTable
         columns={columns}
-        data={assignedParts}
+        data={filteredAssignedParts}
         showPagination={false}
         layout="auto"
         className="max-h-[24rem]"
-        emptyState={{
-          title: "No parts assigned",
-          description:
-            "Assign parts to this vendor before generating purchase orders.",
-          icon: Link2Icon,
-        }}
+        emptyState={
+          search
+            ? {
+                title: "No matching parts",
+                description: "Try adjusting your search.",
+                icon: Link2Icon,
+              }
+            : {
+                title: "No parts assigned",
+                description:
+                  "Assign parts to this vendor before generating purchase orders.",
+                icon: Link2Icon,
+              }
+        }
       />
     </div>
   );

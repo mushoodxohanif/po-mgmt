@@ -8,6 +8,7 @@ import {
   PartSpecsEditor,
   PartSpecsEditorHiddenFields,
 } from "@/components/parts/part-specs-editor";
+import { VendorMultiSelect } from "@/components/parts/vendor-multi-select";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -21,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { VendorOptionForPart } from "@/lib/actions/parts";
 import type { ActionResult } from "@/lib/actions/types";
 import type { Part, PartSpecs } from "@/lib/db/schema";
 import {
@@ -30,18 +32,23 @@ import {
 
 type PartFormDialogProps = {
   part?: Part;
+  availableVendors?: VendorOptionForPart[];
+  assignedVendorIds?: number[];
   action: (formData: FormData) => Promise<ActionResult>;
   triggerLabel?: string;
 };
 
 export function PartFormDialog({
   part,
+  availableVendors = [],
+  assignedVendorIds = [],
   action,
   triggerLabel,
 }: PartFormDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [vendorSelectKey, setVendorSelectKey] = useState(0);
   const isEdit = Boolean(part);
 
   const [category, setCategory] = useState<PartCategory>(
@@ -70,6 +77,7 @@ export function PartFormDialog({
           (part?.name ? inferPartCategory(part.name) : "generic"),
       );
       setSpecs(part?.specs ?? {});
+      setVendorSelectKey((key) => key + 1);
     }
     setOpen(nextOpen);
   }
@@ -127,6 +135,13 @@ export function PartFormDialog({
               defaultValue={part?.description ?? ""}
             />
           </div>
+
+          <VendorMultiSelect
+            key={vendorSelectKey}
+            vendors={availableVendors}
+            assignedVendorIds={assignedVendorIds}
+            disabled={pending}
+          />
 
           <DrawerFooter>
             <Button type="submit" disabled={pending}>

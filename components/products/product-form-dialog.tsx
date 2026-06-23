@@ -24,6 +24,7 @@ import type { Product } from "@/lib/db/schema";
 type ProductFormDialogProps = {
   product?: Product;
   availableParts?: PartOptionForProduct[];
+  existingPartIds?: number[];
   action: (formData: FormData) => Promise<ActionResult>;
   triggerLabel?: string;
 };
@@ -31,6 +32,7 @@ type ProductFormDialogProps = {
 export function ProductFormDialog({
   product,
   availableParts = [],
+  existingPartIds = [],
   action,
   triggerLabel,
 }: ProductFormDialogProps) {
@@ -38,6 +40,11 @@ export function ProductFormDialog({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const isEdit = Boolean(product);
+  const existingPartIdSet = new Set(existingPartIds);
+  const selectableParts = isEdit
+    ? availableParts.filter((part) => !existingPartIdSet.has(part.id))
+    : availableParts;
+  const showPartSelect = !isEdit || availableParts.length > 0;
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -66,12 +73,12 @@ export function ProductFormDialog({
           {triggerLabel ?? (isEdit ? "Edit" : "Add product")}
         </Button>
       </DrawerTrigger>
-      <DrawerContent className={isEdit ? "sm:max-w-md" : "sm:max-w-lg"}>
+      <DrawerContent className="sm:max-w-lg">
         <DrawerHeader>
           <DrawerTitle>{isEdit ? "Edit product" : "Add product"}</DrawerTitle>
           <DrawerDescription>
             {isEdit
-              ? "Update product identifiers."
+              ? "Update product identifiers and add parts to the bill of materials."
               : "Create a product and select the parts that make it up."}
           </DrawerDescription>
         </DrawerHeader>
@@ -103,8 +110,22 @@ export function ProductFormDialog({
               disabled={pending}
             />
           </div>
-          {!isEdit ? (
-            <PartMultiSelect parts={availableParts} disabled={pending} />
+          {showPartSelect ? (
+            <PartMultiSelect
+              parts={selectableParts}
+              disabled={pending}
+              label={isEdit ? "Add parts" : undefined}
+              description={
+                isEdit
+                  ? "Select additional parts to add to this product. Each part is supplied by one or more vendors."
+                  : undefined
+              }
+              emptyMessage={
+                isEdit
+                  ? "All catalog parts are already on this product's BOM."
+                  : undefined
+              }
+            />
           ) : null}
           <DrawerFooter>
             <Button type="submit" disabled={pending}>

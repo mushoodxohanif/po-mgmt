@@ -3,9 +3,15 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { ListTreeIcon } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { BomImages } from "@/components/bom/bom-images";
+import { ClientTableToolbar } from "@/components/data-table/client-table-toolbar";
 import { DataTable } from "@/components/data-table/data-table";
 import { PartSpecsDisplay } from "@/components/parts/part-specs-display";
+import {
+  matchesSearch,
+  matchesSpecsSearch,
+} from "@/lib/data-table/client-filter";
 
 export type ProductBomLine = {
   id: number;
@@ -29,11 +35,47 @@ type ProductBomDataTableProps = {
   extraColumns?: ColumnDef<ProductBomLine>[];
 };
 
+const FILTERED_EMPTY_STATE = {
+  title: "No matching BOM lines",
+  description: "Try adjusting your search or filters.",
+  icon: ListTreeIcon,
+};
+
 export function ProductBomDataTable({
   lines,
   vendorNamesByPartId,
   extraColumns = [],
 }: ProductBomDataTableProps) {
+  const [search, setSearch] = useState("");
+  const [vendorFilter, setVendorFilter] = useState("all");
+
+  const filteredLines = useMemo(() => {
+    return lines.filter((line) => {
+      const vendorNames = vendorNamesByPartId?.get(line.part.id) ?? [];
+      const vendorText = vendorNames.join(", ");
+
+      const matchesQuery =
+        matchesSearch(
+          [line.itemNo, line.part.name, line.remarks, vendorText],
+          search,
+        ) || matchesSpecsSearch(line.part.specs, line.part.description, search);
+
+      if (!matchesQuery) return false;
+
+      if (vendorFilter === "assigned") {
+        return vendorNames.length > 0;
+      }
+
+      if (vendorFilter === "unassigned") {
+        return vendorNames.length === 0;
+      }
+
+      return true;
+    });
+  }, [lines, search, vendorFilter, vendorNamesByPartId]);
+
+  const isFiltered = Boolean(search) || vendorFilter !== "all";
+
   const columns: ColumnDef<ProductBomLine>[] = [
     {
       accessorKey: "itemNo",
@@ -124,18 +166,47 @@ export function ProductBomDataTable({
   ];
 
   return (
-    <DataTable
-      columns={columns}
-      data={lines}
-      showPagination={false}
-      layout="auto"
-      className="max-h-[28rem]"
-      emptyState={{
-        title: "No BOM lines",
-        description:
-          "Add BOM lines to define which parts make up this product.",
-        icon: ListTreeIcon,
-      }}
-    />
+    <div className="space-y-3">
+      <ClientTableToolbar
+        searchPlaceholder="Search BOM lines by part, item no., vendor, or specs…"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={
+          vendorNamesByPartId
+            ? [
+                {
+                  key: "vendor",
+                  label: "Vendor",
+                  placeholder: "Vendor assignment",
+                  value: vendorFilter,
+                  onChange: setVendorFilter,
+                  allLabel: "All vendor states",
+                  options: [
+                    { value: "assigned", label: "Has vendor" },
+                    { value: "unassigned", label: "No vendor" },
+                  ],
+                },
+              ]
+            : []
+        }
+      />
+      <DataTable
+        columns={columns}
+        data={filteredLines}
+        showPagination={false}
+        layout="auto"
+        className="max-h-[28rem]"
+        emptyState={
+          isFiltered
+            ? FILTERED_EMPTY_STATE
+            : {
+                title: "No BOM lines",
+                description:
+                  "Add BOM lines to define which parts make up this product.",
+                icon: ListTreeIcon,
+              }
+        }
+      />
+    </div>
   );
 }
