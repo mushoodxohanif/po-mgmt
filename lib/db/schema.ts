@@ -34,6 +34,7 @@ export const parts = pgTable(
     normalizedName: text("normalized_name").notNull(),
     category: text("category"),
     specs: jsonb("specs").$type<PartSpecs>().notNull().default({}),
+    imageUrls: jsonb("image_urls").$type<string[]>().notNull().default([]),
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -53,6 +54,7 @@ export const products = pgTable(
     id: serial("id").primaryKey(),
     modelCode: text("model_code").notNull(),
     displayName: text("display_name").notNull(),
+    imageUrls: jsonb("image_urls").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

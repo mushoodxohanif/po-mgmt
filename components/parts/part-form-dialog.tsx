@@ -9,6 +9,7 @@ import {
   PartSpecsEditorHiddenFields,
 } from "@/components/parts/part-specs-editor";
 import { VendorMultiSelect } from "@/components/parts/vendor-multi-select";
+import { ImageAttachmentsEditor } from "@/components/shared/image-attachments-editor";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -29,11 +30,16 @@ import {
   inferPartCategory,
   type PartCategory,
 } from "@/lib/services/part-specs";
+import type { CatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 
 type PartFormDialogProps = {
-  part?: Part;
+  part?: Pick<
+    Part,
+    "id" | "name" | "category" | "specs" | "description" | "imageUrls"
+  >;
   availableVendors?: VendorOptionForPart[];
   assignedVendorIds?: number[];
+  imageUploadMode: CatalogImageBlobUploadMode;
   action: (formData: FormData) => Promise<ActionResult>;
   triggerLabel?: string;
 };
@@ -42,6 +48,7 @@ export function PartFormDialog({
   part,
   availableVendors = [],
   assignedVendorIds = [],
+  imageUploadMode,
   action,
   triggerLabel,
 }: PartFormDialogProps) {
@@ -49,6 +56,7 @@ export function PartFormDialog({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [vendorSelectKey, setVendorSelectKey] = useState(0);
+  const [imageEditorKey, setImageEditorKey] = useState(0);
   const isEdit = Boolean(part);
 
   const [category, setCategory] = useState<PartCategory>(
@@ -78,6 +86,7 @@ export function PartFormDialog({
       );
       setSpecs(part?.specs ?? {});
       setVendorSelectKey((key) => key + 1);
+      setImageEditorKey((key) => key + 1);
     }
     setOpen(nextOpen);
   }
@@ -140,6 +149,14 @@ export function PartFormDialog({
             key={vendorSelectKey}
             vendors={availableVendors}
             assignedVendorIds={assignedVendorIds}
+            disabled={pending}
+          />
+
+          <ImageAttachmentsEditor
+            key={imageEditorKey}
+            entityType="parts"
+            uploadMode={imageUploadMode}
+            initialUrls={part?.imageUrls ?? []}
             disabled={pending}
           />
 

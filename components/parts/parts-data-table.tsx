@@ -19,12 +19,14 @@ import {
 import type { PartListRow } from "@/lib/data-table/list-queries";
 import type { PaginatedResult } from "@/lib/data-table/pagination";
 import { PART_CATEGORIES } from "@/lib/services/part-specs";
+import type { CatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 
 type PartsDataTableProps = {
   result: PaginatedResult<PartListRow>;
   listParams: PartsListParams;
   availableVendors: VendorOptionForPart[];
   partVendorIds: Record<number, number[]>;
+  imageUploadMode: CatalogImageBlobUploadMode;
 };
 
 const FILTERED_EMPTY_STATE = {
@@ -38,6 +40,7 @@ export function PartsDataTable({
   listParams,
   availableVendors,
   partVendorIds,
+  imageUploadMode,
 }: PartsDataTableProps) {
   const columns: ColumnDef<PartListRow>[] = [
     {
@@ -91,6 +94,7 @@ export function PartsDataTable({
             action={updatePart}
             availableVendors={availableVendors}
             assignedVendorIds={partVendorIds[row.original.id] ?? []}
+            imageUploadMode={imageUploadMode}
           />
           <DeleteConfirmButton
             title="Delete part?"
@@ -157,6 +161,7 @@ export function PartsDataTable({
                   <PartFormDialog
                     action={createPart}
                     availableVendors={availableVendors}
+                    imageUploadMode={imageUploadMode}
                   />
                 ),
               }

@@ -45,4 +45,5 @@ next-env.d.ts
 # local PDF storage (dev fallback)
 .pdf-storage/
 .bom-image-storage/
+.catalog-image-storage/
 .env*

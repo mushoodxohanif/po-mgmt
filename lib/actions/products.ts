@@ -4,6 +4,10 @@ import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import {
+  parseImageUrlsFromFormData,
+  validateImageUrls,
+} from "@/lib/actions/parse-image-urls";
+import {
   type ActionResult,
   actionError,
   actionSuccess,
@@ -99,6 +103,10 @@ export async function createProduct(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  const imageUrls = parseImageUrlsFromFormData(formData);
+  const imageUrlsError = validateImageUrls(imageUrls);
+  if (imageUrlsError) return actionError(imageUrlsError);
+
   try {
     await db.transaction(async (tx) => {
       const [inserted] = await tx
@@ -106,6 +114,7 @@ export async function createProduct(formData: FormData): Promise<ActionResult> {
         .values({
           modelCode: modelCode.trim(),
           displayName: displayName.trim(),
+          imageUrls,
         })
         .returning({ id: products.id });
 
@@ -164,6 +173,10 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  const imageUrls = parseImageUrlsFromFormData(formData);
+  const imageUrlsError = validateImageUrls(imageUrls);
+  if (imageUrlsError) return actionError(imageUrlsError);
+
   try {
     await db.transaction(async (tx) => {
       await tx
@@ -171,6 +184,7 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
         .set({
           modelCode: modelCode.trim(),
           displayName: displayName.trim(),
+          imageUrls,
           updatedAt: new Date(),
         })
         .where(eq(products.id, id));

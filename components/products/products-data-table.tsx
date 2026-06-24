@@ -23,6 +23,7 @@ import {
 } from "@/lib/data-table/list-params";
 import type { ProductListRow } from "@/lib/data-table/list-queries";
 import type { PaginatedResult } from "@/lib/data-table/pagination";
+import type { CatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 import type { SkuExcelBlobUploadMode } from "@/lib/storage/sku-excel-blob";
 
 type ProductsDataTableProps = {
@@ -30,6 +31,7 @@ type ProductsDataTableProps = {
   listParams: ProductsListParams;
   availableParts: PartOptionForProduct[];
   blobUploadMode: SkuExcelBlobUploadMode;
+  imageUploadMode: CatalogImageBlobUploadMode;
 };
 
 const FILTERED_EMPTY_STATE = {
@@ -43,6 +45,7 @@ export function ProductsDataTable({
   listParams,
   availableParts,
   blobUploadMode,
+  imageUploadMode,
 }: ProductsDataTableProps) {
   const columns: ColumnDef<ProductListRow>[] = [
     {
@@ -85,6 +88,7 @@ export function ProductsDataTable({
             product={row.original}
             action={updateProduct}
             availableParts={availableParts}
+            imageUploadMode={imageUploadMode}
           />
           <DeleteConfirmButton
             title="Delete product?"
@@ -139,6 +143,7 @@ export function ProductsDataTable({
                     <ProductFormDialog
                       action={createProduct}
                       availableParts={availableParts}
+                      imageUploadMode={imageUploadMode}
                     />
                   </div>
                 ),

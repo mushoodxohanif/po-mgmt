@@ -5,6 +5,7 @@ import { PartImageGallery } from "@/components/bom/bom-images";
 import { PageHeader } from "@/components/page-header";
 import { PartFormDialog } from "@/components/parts/part-form-dialog";
 import { PartSpecsDisplay } from "@/components/parts/part-specs-display";
+import { CatalogImageGallery } from "@/components/shared/catalog-image-gallery";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,6 +27,7 @@ import {
   updatePart,
 } from "@/lib/actions/parts";
 import { formatPartSpecs } from "@/lib/services/part-specs";
+import { getCatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 
 type PartDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -63,6 +65,7 @@ export default async function PartDetailPage({ params }: PartDetailPageProps) {
           action={updatePart}
           availableVendors={availableVendors}
           assignedVendorIds={assignedVendorIds}
+          imageUploadMode={getCatalogImageBlobUploadMode()}
           triggerLabel="Edit part"
         />
       </PageHeader>
@@ -96,7 +99,12 @@ export default async function PartDetailPage({ params }: PartDetailPageProps) {
       </div>
 
       <section className="mb-8 space-y-3">
-        <h2 className="font-heading text-lg font-medium">Part images</h2>
+        <h2 className="font-heading text-lg font-medium">Attached images</h2>
+        <CatalogImageGallery imageUrls={part.imageUrls} title={part.name} />
+      </section>
+
+      <section className="mb-8 space-y-3">
+        <h2 className="font-heading text-lg font-medium">BOM images</h2>
         <PartImageGallery
           partName={part.name}
           images={part.productParts.map((productPart) => ({

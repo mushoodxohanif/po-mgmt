@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/parts";
 import { parsePartsListParams } from "@/lib/data-table/list-params";
 import { getPartsPaginated } from "@/lib/data-table/list-queries";
+import { getCatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 
 type PartsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -33,6 +34,7 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
           <PartFormDialog
             action={createPart}
             availableVendors={availableVendors}
+            imageUploadMode={getCatalogImageBlobUploadMode()}
           />
         </PageHeader>
       }
@@ -42,6 +44,7 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
         listParams={listParams}
         availableVendors={availableVendors}
         partVendorIds={partVendorIds}
+        imageUploadMode={getCatalogImageBlobUploadMode()}
       />
     </DataTablePage>
   );

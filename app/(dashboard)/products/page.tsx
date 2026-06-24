@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/products";
 import { parseProductsListParams } from "@/lib/data-table/list-params";
 import { getProductsPaginated } from "@/lib/data-table/list-queries";
+import { getCatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 import { getSkuExcelBlobUploadMode } from "@/lib/storage/sku-excel-blob";
 
 type ProductsPageProps = {
@@ -39,6 +40,7 @@ export default async function ProductsPage({
             <ProductFormDialog
               action={createProduct}
               availableParts={availableParts}
+              imageUploadMode={getCatalogImageBlobUploadMode()}
             />
           </div>
         </PageHeader>
@@ -49,6 +51,7 @@ export default async function ProductsPage({
         listParams={listParams}
         availableParts={availableParts}
         blobUploadMode={getSkuExcelBlobUploadMode()}
+        imageUploadMode={getCatalogImageBlobUploadMode()}
       />
     </DataTablePage>
   );

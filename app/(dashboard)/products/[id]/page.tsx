@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProductBomEditor } from "@/components/products/product-bom-editor";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { UploadProductBomButton } from "@/components/products/sku-import-buttons";
+import { CatalogImageGallery } from "@/components/shared/catalog-image-gallery";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,6 +17,7 @@ import {
   getProductById,
   updateProduct,
 } from "@/lib/actions/products";
+import { getCatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 import { getSkuExcelBlobUploadMode } from "@/lib/storage/sku-excel-blob";
 
 type ProductDetailPageProps = {
@@ -60,6 +62,7 @@ export default async function ProductDetailPage({
             action={updateProduct}
             availableParts={availableParts}
             existingPartIds={product.productParts.map((line) => line.partId)}
+            imageUploadMode={getCatalogImageBlobUploadMode()}
             triggerLabel="Edit product"
           />
         </div>
@@ -73,6 +76,14 @@ export default async function ProductDetailPage({
           </CardTitle>
         </CardHeader>
       </Card>
+
+      <section className="mb-8 space-y-3">
+        <h2 className="font-heading text-lg font-medium">Attached images</h2>
+        <CatalogImageGallery
+          imageUrls={product.imageUrls}
+          title={product.displayName}
+        />
+      </section>
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-medium">Bill of materials</h2>

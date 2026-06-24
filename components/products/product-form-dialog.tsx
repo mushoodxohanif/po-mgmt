@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { PartMultiSelect } from "@/components/products/part-multi-select";
+import { ImageAttachmentsEditor } from "@/components/shared/image-attachments-editor";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -20,11 +21,13 @@ import { Label } from "@/components/ui/label";
 import type { PartOptionForProduct } from "@/lib/actions/products";
 import type { ActionResult } from "@/lib/actions/types";
 import type { Product } from "@/lib/db/schema";
+import type { CatalogImageBlobUploadMode } from "@/lib/storage/catalog-image-blob";
 
 type ProductFormDialogProps = {
-  product?: Product;
+  product?: Pick<Product, "id" | "modelCode" | "displayName" | "imageUrls">;
   availableParts?: PartOptionForProduct[];
   existingPartIds?: number[];
+  imageUploadMode: CatalogImageBlobUploadMode;
   action: (formData: FormData) => Promise<ActionResult>;
   triggerLabel?: string;
 };
@@ -33,12 +36,14 @@ export function ProductFormDialog({
   product,
   availableParts = [],
   existingPartIds = [],
+  imageUploadMode,
   action,
   triggerLabel,
 }: ProductFormDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [imageEditorKey, setImageEditorKey] = useState(0);
   const isEdit = Boolean(product);
   const existingPartIdSet = new Set(existingPartIds);
   const selectableParts = isEdit
@@ -60,6 +65,9 @@ export function ProductFormDialog({
   }
 
   function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setImageEditorKey((key) => key + 1);
+    }
     setOpen(nextOpen);
   }
 
@@ -127,6 +135,13 @@ export function ProductFormDialog({
               }
             />
           ) : null}
+          <ImageAttachmentsEditor
+            key={imageEditorKey}
+            entityType="products"
+            uploadMode={imageUploadMode}
+            initialUrls={product?.imageUrls ?? []}
+            disabled={pending}
+          />
           <DrawerFooter>
             <Button type="submit" disabled={pending}>
               {pending ? "Saving…" : isEdit ? "Save changes" : "Create product"}

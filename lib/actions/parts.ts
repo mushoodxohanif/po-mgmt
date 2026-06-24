@@ -4,6 +4,10 @@ import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import {
+  parseImageUrlsFromFormData,
+  validateImageUrls,
+} from "@/lib/actions/parse-image-urls";
+import {
   type ActionResult,
   actionError,
   actionSuccess,
@@ -130,6 +134,10 @@ export async function createPart(formData: FormData): Promise<ActionResult> {
     return actionError("A part with this name already exists");
   }
 
+  const imageUrls = parseImageUrlsFromFormData(formData);
+  const imageUrlsError = validateImageUrls(imageUrls);
+  if (imageUrlsError) return actionError(imageUrlsError);
+
   try {
     const { partId } = await upsertPartRecord({
       name: name.trim(),
@@ -138,6 +146,10 @@ export async function createPart(formData: FormData): Promise<ActionResult> {
       description: readOptionalString(formData, "description"),
       mergeStrategy: "manual",
     });
+    await db
+      .update(parts)
+      .set({ imageUrls, updatedAt: new Date() })
+      .where(eq(parts.id, partId));
     await syncPartVendors(partId, parseVendorIds(formData));
     revalidatePath("/parts");
     revalidatePath("/vendors");
@@ -167,6 +179,10 @@ export async function updatePart(formData: FormData): Promise<ActionResult> {
     return actionError("Another part with this name already exists");
   }
 
+  const imageUrls = parseImageUrlsFromFormData(formData);
+  const imageUrlsError = validateImageUrls(imageUrls);
+  if (imageUrlsError) return actionError(imageUrlsError);
+
   try {
     await db
       .update(parts)
@@ -176,6 +192,7 @@ export async function updatePart(formData: FormData): Promise<ActionResult> {
         category: readOptionalString(formData, "category"),
         specs: parseSpecsJson(readOptionalString(formData, "specs")),
         description: readOptionalString(formData, "description"),
+        imageUrls,
         updatedAt: new Date(),
       })
       .where(eq(parts.id, id));
