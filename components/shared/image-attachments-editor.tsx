@@ -3,10 +3,9 @@
 import { ImagePlus, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import { useId, useRef, useState } from "react";
-import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
 import { CATALOG_IMAGE_MAX_COUNT } from "@/lib/catalog-image-limits";
 import type {
   CatalogImageBlobUploadMode,

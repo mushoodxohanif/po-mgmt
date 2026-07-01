@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -16,6 +14,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionResult } from "@/lib/actions/types";
 import type { Vendor } from "@/lib/db/types";

@@ -1,8 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { toast } from "sonner";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
 import type { ActionResult } from "@/lib/actions/types";
 
 type DeleteConfirmButtonProps = {

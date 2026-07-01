@@ -4,11 +4,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Link2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { toast } from "sonner";
 import { ClientTableToolbar } from "@/components/data-table/client-table-toolbar";
 import { DataTable } from "@/components/data-table/data-table";
 import { PartSpecsDisplay } from "@/components/parts/part-specs-display";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
 import {
   assignPartToVendor,
   removePartFromVendor,

@@ -3,7 +3,6 @@
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { toast } from "sonner";
 import { partDisplayLabel } from "@/components/parts/part-specs-display";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
 import {
   createVendorPoAction,
   getVendorPoParts,

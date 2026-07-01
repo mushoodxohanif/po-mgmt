@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
-
 import { PartMultiSelect } from "@/components/products/part-multi-select";
 import { ImageAttachmentsEditor } from "@/components/shared/image-attachments-editor";
 import { Button } from "@/components/ui/button";
@@ -18,6 +16,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
 import type { PartOptionForProduct } from "@/lib/actions/products";
 import type { ActionResult } from "@/lib/actions/types";
 import type { CatalogImageBlobUploadMode } from "@/lib/catalog-image-shared";

@@ -3,7 +3,6 @@
 import { FileDownIcon, MinusIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
 import { partDisplayLabel } from "@/components/parts/part-specs-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
 import {
   Table,
   TableBody,

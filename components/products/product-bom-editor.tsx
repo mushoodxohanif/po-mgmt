@@ -3,8 +3,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
 import {
   addProductBomLine,
   type PartOptionForProduct,
