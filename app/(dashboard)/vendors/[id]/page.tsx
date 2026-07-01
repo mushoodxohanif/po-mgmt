@@ -1,4 +1,3 @@
-import { asc } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -14,8 +13,8 @@ import {
 import { VendorFormDialog } from "@/components/vendors/vendor-form-dialog";
 import { VendorPartAssignment } from "@/components/vendors/vendor-part-assignment";
 import { getVendorById, updateVendor } from "@/lib/actions/vendors";
-import { db } from "@/lib/db";
-import { parts } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { mapPart } from "@/lib/db/types";
 
 type VendorDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -31,7 +30,9 @@ export default async function VendorDetailPage({
   const vendor = await getVendorById(id);
   if (!vendor) notFound();
 
-  const allParts = await db.select().from(parts).orderBy(asc(parts.name));
+  const allParts = (
+    await prisma.part.findMany({ orderBy: { name: "asc" } })
+  ).map(mapPart);
 
   return (
     <>

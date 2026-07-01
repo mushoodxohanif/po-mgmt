@@ -1,12 +1,12 @@
 import { renderToBuffer } from "@react-pdf/renderer";
-import { eq, inArray } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import { productParts, vendorPoVersions } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { asPartSpecs } from "@/lib/db/types";
 import {
   VendorPoDocument,
   type VendorPoPdfData,
 } from "@/lib/pdf/vendor-po-document";
+import { decimalToNumber } from "@/lib/services/money";
 import { formatPartSpecs } from "@/lib/services/part-specs";
 import { storeVendorPoPdf } from "@/lib/storage/pdf-storage";
 
@@ -37,14 +37,14 @@ function pickThumbnailUrl(
 export async function generateVendorPoPdfForVersion(
   versionId: number,
 ): Promise<{ success: boolean; pdfUrl?: string; error?: string }> {
-  const version = await db.query.vendorPoVersions.findFirst({
-    where: eq(vendorPoVersions.id, versionId),
-    with: {
+  const version = await prisma.vendorPoVersion.findFirst({
+    where: { id: versionId },
+    include: {
       lines: {
-        with: { part: true },
+        include: { part: true },
       },
       vendorPo: {
-        with: { vendor: true },
+        include: { vendor: true },
       },
     },
   });
@@ -56,15 +56,15 @@ export async function generateVendorPoPdfForVersion(
   const partIds = version.lines.map((line) => line.partId);
   const partImageRows =
     partIds.length > 0
-      ? await db
-          .select({
-            partId: productParts.partId,
-            imageFrontUrl: productParts.imageFrontUrl,
-            imageSideUrl: productParts.imageSideUrl,
-            imageBottomUrl: productParts.imageBottomUrl,
-          })
-          .from(productParts)
-          .where(inArray(productParts.partId, partIds))
+      ? await prisma.productPart.findMany({
+          where: { partId: { in: partIds } },
+          select: {
+            partId: true,
+            imageFrontUrl: true,
+            imageSideUrl: true,
+            imageBottomUrl: true,
+          },
+        })
       : [];
 
   const pdfData: VendorPoPdfData = {
@@ -80,12 +80,20 @@ export async function generateVendorPoPdfForVersion(
       address: version.vendorPo.vendor.address,
     },
     lines: version.lines
-      .map((line) => ({
-        partName: line.part.name,
-        description: formatPartSpecs(line.part),
-        quantity: line.quantity,
-        thumbnailUrl: pickThumbnailUrl(partImageRows, line.partId),
-      }))
+      .map((line) => {
+        const unitPrice = decimalToNumber(line.unitPrice) ?? 0;
+        return {
+          partName: line.part.name,
+          description: formatPartSpecs({
+            specs: asPartSpecs(line.part.specs),
+            description: line.part.description,
+          }),
+          quantity: line.quantity,
+          unitPrice,
+          lineTotal: line.quantity * unitPrice,
+          thumbnailUrl: pickThumbnailUrl(partImageRows, line.partId),
+        };
+      })
       .sort((a, b) => a.partName.localeCompare(b.partName)),
   };
 
@@ -93,10 +101,10 @@ export async function generateVendorPoPdfForVersion(
     const buffer = await renderToBuffer(<VendorPoDocument data={pdfData} />);
     const pdfUrl = await storeVendorPoPdf(versionId, Buffer.from(buffer));
 
-    await db
-      .update(vendorPoVersions)
-      .set({ pdfUrl })
-      .where(eq(vendorPoVersions.id, versionId));
+    await prisma.vendorPoVersion.update({
+      where: { id: versionId },
+      data: { pdfUrl },
+    });
 
     return { success: true, pdfUrl };
   } catch {

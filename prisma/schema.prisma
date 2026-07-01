@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Vendor {
+  id          Int      @id @default(autoincrement())
+  name        String
+  contactName String?  @map("contact_name")
+  email       String?
+  phone       String?
+  address     String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  vendorParts VendorPart[]
+  vendorPos   VendorPo[]
+
+  @@map("vendors")
+}
+
+model Part {
+  id             Int      @id @default(autoincrement())
+  name           String
+  normalizedName String   @map("normalized_name")
+  category       String?
+  specs          Json     @default("{}")
+  imageUrls      Json     @default("[]") @map("image_urls")
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  productParts         ProductPart[]
+  vendorParts          VendorPart[]
+  vendorPoVersionLines VendorPoVersionLine[]
+
+  @@unique([normalizedName], map: "parts_normalized_name_idx")
+  @@map("parts")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  modelCode   String   @map("model_code")
+  displayName String   @map("display_name")
+  imageUrls   Json     @default("[]") @map("image_urls")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  productParts ProductPart[]
+
+  @@unique([modelCode], map: "products_model_code_idx")
+  @@map("products")
+}
+
+model ProductPart {
+  id             Int     @id @default(autoincrement())
+  productId      Int     @map("product_id")
+  partId         Int     @map("part_id")
+  itemNo         String? @map("item_no")
+  quantity       Int
+  remarks        String?
+  imageSideUrl   String? @map("image_side_url")
+  imageFrontUrl  String? @map("image_front_url")
+  imageBottomUrl String? @map("image_bottom_url")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  part    Part    @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@map("product_parts")
+}
+
+model VendorPart {
+  id        Int      @id @default(autoincrement())
+  vendorId  Int      @map("vendor_id")
+  partId    Int      @map("part_id")
+  unitPrice Decimal? @map("unit_price") @db.Decimal(12, 2)
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  part   Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, partId], map: "vendor_parts_vendor_part_idx")
+  @@map("vendor_parts")
+}
+
+model VendorPo {
+  id        Int      @id @default(autoincrement())
+  vendorId  Int      @map("vendor_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  vendor   Vendor            @relation(fields: [vendorId], references: [id])
+  versions VendorPoVersion[]
+
+  @@map("vendor_pos")
+}
+
+model VendorPoVersion {
+  id            Int      @id @default(autoincrement())
+  vendorPoId    Int      @map("vendor_po_id")
+  versionNumber Int      @map("version_number")
+  pdfUrl        String?  @map("pdf_url")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  vendorPo VendorPo              @relation(fields: [vendorPoId], references: [id], onDelete: Cascade)
+  lines    VendorPoVersionLine[]
+
+  @@unique([vendorPoId, versionNumber], map: "vendor_po_versions_po_version_idx")
+  @@map("vendor_po_versions")
+}
+
+model VendorPoVersionLine {
+  id                Int     @id @default(autoincrement())
+  vendorPoVersionId Int     @map("vendor_po_version_id")
+  partId            Int     @map("part_id")
+  quantity          Int
+  unitPrice         Decimal @map("unit_price") @db.Decimal(12, 2)
+
+  vendorPoVersion VendorPoVersion @relation(fields: [vendorPoVersionId], references: [id], onDelete: Cascade)
+  part            Part            @relation(fields: [partId], references: [id])
+
+  @@map("vendor_po_version_lines")
+}

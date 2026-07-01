@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import type { PartOptionForProduct } from "@/lib/actions/products";
 import type { ActionResult } from "@/lib/actions/types";
 import type { CatalogImageBlobUploadMode } from "@/lib/catalog-image-shared";
-import type { Product } from "@/lib/db/schema";
+import type { Product } from "@/lib/db/types";
 
 type ProductFormDialogProps = {
   product?: Pick<Product, "id" | "modelCode" | "displayName" | "imageUrls">;

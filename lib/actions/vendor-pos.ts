@@ -1,6 +1,5 @@
 "use server";
 
-import { desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import {
@@ -8,8 +7,8 @@ import {
   actionError,
   actionSuccess,
 } from "@/lib/actions/types";
-import { db } from "@/lib/db";
-import { vendorPos } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { mapVendorPoVersionLine } from "@/lib/db/types";
 import {
   createVendorPo,
   getVendorPoParts,
@@ -119,36 +118,53 @@ export async function saveVendorPoVersionAction(formData: FormData): Promise<
 }
 
 export async function getVendorPos() {
-  return db.query.vendorPos.findMany({
-    orderBy: [desc(vendorPos.createdAt)],
-    with: {
+  const rows = await prisma.vendorPo.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
       vendor: true,
       versions: {
-        orderBy: (versions, { desc: descVersion }) => [
-          descVersion(versions.versionNumber),
-        ],
-        limit: 1,
-        with: { lines: true },
+        orderBy: { versionNumber: "desc" },
+        take: 1,
+        include: { lines: true },
       },
     },
   });
+
+  return rows.map((po) => ({
+    ...po,
+    versions: po.versions.map((version) => ({
+      ...version,
+      lines: version.lines.map(mapVendorPoVersionLine),
+    })),
+  }));
 }
 
 export async function getVendorPoById(id: number) {
-  return db.query.vendorPos.findFirst({
-    where: eq(vendorPos.id, id),
-    with: {
+  const vendorPo = await prisma.vendorPo.findFirst({
+    where: { id },
+    include: {
       vendor: true,
       versions: {
-        orderBy: (versions, { desc: descVersion }) => [
-          descVersion(versions.versionNumber),
-        ],
-        with: {
+        orderBy: { versionNumber: "desc" },
+        include: {
           lines: {
-            with: { part: true },
+            include: { part: true },
           },
         },
       },
     },
   });
+
+  if (!vendorPo) return null;
+
+  return {
+    ...vendorPo,
+    versions: vendorPo.versions.map((version) => ({
+      ...version,
+      lines: version.lines.map((line) => ({
+        ...mapVendorPoVersionLine(line),
+        part: line.part,
+      })),
+    })),
+  };
 }

@@ -1,10 +1,8 @@
 import { readFile } from "node:fs/promises";
-import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { db } from "@/lib/db";
-import { vendorPoVersions } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
 import { getLocalPdfPath } from "@/lib/storage/pdf-storage";
 
 type RouteContext = {
@@ -16,9 +14,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   const versionId = Number(versionIdParam);
   if (!Number.isFinite(versionId)) notFound();
 
-  const version = await db.query.vendorPoVersions.findFirst({
-    where: eq(vendorPoVersions.id, versionId),
-    with: { vendorPo: true },
+  const version = await prisma.vendorPoVersion.findFirst({
+    where: { id: versionId },
+    include: { vendorPo: true },
   });
 
   if (!version) notFound();

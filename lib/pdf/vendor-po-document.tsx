@@ -11,6 +11,8 @@ export type VendorPoPdfLine = {
   partName: string;
   description: string | null;
   quantity: number;
+  unitPrice: number;
+  lineTotal: number;
   thumbnailUrl?: string | null;
 };
 
@@ -81,17 +83,36 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#ccc",
   },
-  colPart: { width: "24%" },
-  colThumb: { width: "8%" },
-  colDescription: { width: "48%" },
-  colQty: { width: "20%", textAlign: "right" },
+  colPart: { width: "17%" },
+  colThumb: { width: "7%" },
+  colDescription: { width: "31%" },
+  colQty: { width: "11%", textAlign: "right" },
+  colUnitPrice: { width: "17%", textAlign: "right" },
+  colLineTotal: { width: "17%", textAlign: "right" },
   thumb: {
     width: 28,
     height: 28,
     objectFit: "cover" as const,
   },
+  totalsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#000",
+  },
+  totalsLabel: {
+    fontFamily: "Helvetica-Bold",
+    marginRight: 12,
+  },
+  totalsValue: {
+    fontFamily: "Helvetica-Bold",
+    width: "17%",
+    textAlign: "right",
+  },
   footer: {
-    marginTop: 24,
+    marginTop: 16,
     fontSize: 9,
     color: "#666",
   },
@@ -101,8 +122,16 @@ function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "long" }).format(date);
 }
 
+function formatMoney(amount: number): string {
+  return `PKR ${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}`;
+}
+
 export function VendorPoDocument({ data }: { data: VendorPoPdfData }) {
   const totalQty = data.lines.reduce((sum, line) => sum + line.quantity, 0);
+  const grandTotal = data.lines.reduce((sum, line) => sum + line.lineTotal, 0);
 
   return (
     <Document>
@@ -145,6 +174,8 @@ export function VendorPoDocument({ data }: { data: VendorPoPdfData }) {
             <Text style={styles.colThumb}> </Text>
             <Text style={styles.colDescription}>Description</Text>
             <Text style={styles.colQty}>Quantity</Text>
+            <Text style={styles.colUnitPrice}>Unit price</Text>
+            <Text style={styles.colLineTotal}>Line total</Text>
           </View>
           {data.lines.map((line) => (
             <View
@@ -161,8 +192,19 @@ export function VendorPoDocument({ data }: { data: VendorPoPdfData }) {
                 {line.description ?? "—"}
               </Text>
               <Text style={styles.colQty}>{line.quantity}</Text>
+              <Text style={styles.colUnitPrice}>
+                {formatMoney(line.unitPrice)}
+              </Text>
+              <Text style={styles.colLineTotal}>
+                {formatMoney(line.lineTotal)}
+              </Text>
             </View>
           ))}
+        </View>
+
+        <View style={styles.totalsRow}>
+          <Text style={styles.totalsLabel}>Grand total</Text>
+          <Text style={styles.totalsValue}>{formatMoney(grandTotal)}</Text>
         </View>
 
         <View style={styles.footer}>

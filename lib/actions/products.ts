@@ -1,6 +1,5 @@
 "use server";
 
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import {
@@ -12,13 +11,8 @@ import {
   actionError,
   actionSuccess,
 } from "@/lib/actions/types";
-import { db } from "@/lib/db";
-import {
-  parts,
-  productParts,
-  products,
-  vendorPoVersionLines,
-} from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { mapPart, mapProduct } from "@/lib/db/types";
 
 export type PartOptionForProduct = {
   id: number;
@@ -30,11 +24,11 @@ export type PartOptionForProduct = {
 export async function getPartsForProductSelection(): Promise<
   PartOptionForProduct[]
 > {
-  const rows = await db.query.parts.findMany({
-    orderBy: [asc(parts.name)],
-    with: {
+  const rows = await prisma.part.findMany({
+    orderBy: { name: "asc" },
+    include: {
       vendorParts: {
-        with: { vendor: true },
+        include: { vendor: true },
       },
     },
   });
@@ -82,21 +76,19 @@ export async function createProduct(formData: FormData): Promise<ActionResult> {
     return actionError("Display name is required");
   }
 
-  const [existing] = await db
-    .select()
-    .from(products)
-    .where(eq(products.modelCode, modelCode.trim()))
-    .limit(1);
+  const existing = await prisma.product.findFirst({
+    where: { modelCode: modelCode.trim() },
+  });
 
   if (existing) {
     return actionError("A product with this model code already exists");
   }
 
   if (partIds.length > 0) {
-    const existingParts = await db
-      .select({ id: parts.id })
-      .from(parts)
-      .where(inArray(parts.id, partIds));
+    const existingParts = await prisma.part.findMany({
+      where: { id: { in: partIds } },
+      select: { id: true },
+    });
 
     if (existingParts.length !== partIds.length) {
       return actionError("One or more selected parts no longer exist");
@@ -108,25 +100,25 @@ export async function createProduct(formData: FormData): Promise<ActionResult> {
   if (imageUrlsError) return actionError(imageUrlsError);
 
   try {
-    await db.transaction(async (tx) => {
-      const [inserted] = await tx
-        .insert(products)
-        .values({
+    await prisma.$transaction(async (tx) => {
+      const inserted = await tx.product.create({
+        data: {
           modelCode: modelCode.trim(),
           displayName: displayName.trim(),
           imageUrls,
-        })
-        .returning({ id: products.id });
+        },
+        select: { id: true },
+      });
 
       if (partIds.length > 0) {
-        await tx.insert(productParts).values(
-          partIds.map((partId, index) => ({
+        await tx.productPart.createMany({
+          data: partIds.map((partId, index) => ({
             productId: inserted.id,
             partId,
             quantity: 1,
             itemNo: String(index + 1),
           })),
-        );
+        });
       }
     });
 
@@ -152,21 +144,19 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
     return actionError("Display name is required");
   }
 
-  const [duplicate] = await db
-    .select()
-    .from(products)
-    .where(and(eq(products.modelCode, modelCode.trim()), ne(products.id, id)))
-    .limit(1);
+  const duplicate = await prisma.product.findFirst({
+    where: { modelCode: modelCode.trim(), NOT: { id } },
+  });
 
   if (duplicate) {
     return actionError("Another product with this model code already exists");
   }
 
   if (partIds.length > 0) {
-    const existingParts = await db
-      .select({ id: parts.id })
-      .from(parts)
-      .where(inArray(parts.id, partIds));
+    const existingParts = await prisma.part.findMany({
+      where: { id: { in: partIds } },
+      select: { id: true },
+    });
 
     if (existingParts.length !== partIds.length) {
       return actionError("One or more selected parts no longer exist");
@@ -178,22 +168,21 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
   if (imageUrlsError) return actionError(imageUrlsError);
 
   try {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(products)
-        .set({
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id },
+        data: {
           modelCode: modelCode.trim(),
           displayName: displayName.trim(),
           imageUrls,
-          updatedAt: new Date(),
-        })
-        .where(eq(products.id, id));
+        },
+      });
 
       if (partIds.length > 0) {
-        const existingBom = await tx
-          .select({ partId: productParts.partId })
-          .from(productParts)
-          .where(eq(productParts.productId, id));
+        const existingBom = await tx.productPart.findMany({
+          where: { productId: id },
+          select: { partId: true },
+        });
 
         const existingPartIdSet = new Set(
           existingBom.map((line) => line.partId),
@@ -203,14 +192,14 @@ export async function updateProduct(formData: FormData): Promise<ActionResult> {
         );
 
         if (newPartIds.length > 0) {
-          await tx.insert(productParts).values(
-            newPartIds.map((partId, index) => ({
+          await tx.productPart.createMany({
+            data: newPartIds.map((partId, index) => ({
               productId: id,
               partId,
               quantity: 1,
               itemNo: String(existingBom.length + index + 1),
             })),
-          );
+          });
         }
       }
     });
@@ -229,31 +218,31 @@ export async function deleteProduct(formData: FormData): Promise<ActionResult> {
   if (!Number.isFinite(id)) return actionError("Invalid product id");
 
   try {
-    await db.transaction(async (tx) => {
-      const bomRows = await tx
-        .select({ partId: productParts.partId })
-        .from(productParts)
-        .where(eq(productParts.productId, id));
+    await prisma.$transaction(async (tx) => {
+      const bomRows = await tx.productPart.findMany({
+        where: { productId: id },
+        select: { partId: true },
+      });
 
       const bomPartIds = [...new Set(bomRows.map((row) => row.partId))];
 
-      await tx.delete(products).where(eq(products.id, id));
+      await tx.product.delete({ where: { id } });
 
       if (bomPartIds.length === 0) return;
 
-      const stillLinkedRows = await tx
-        .select({ partId: productParts.partId })
-        .from(productParts)
-        .where(inArray(productParts.partId, bomPartIds));
+      const stillLinkedRows = await tx.productPart.findMany({
+        where: { partId: { in: bomPartIds } },
+        select: { partId: true },
+      });
 
       const stillLinkedPartIds = new Set(
         stillLinkedRows.map((row) => row.partId),
       );
 
-      const vendorPoRows = await tx
-        .select({ partId: vendorPoVersionLines.partId })
-        .from(vendorPoVersionLines)
-        .where(inArray(vendorPoVersionLines.partId, bomPartIds));
+      const vendorPoRows = await tx.vendorPoVersionLine.findMany({
+        where: { partId: { in: bomPartIds } },
+        select: { partId: true },
+      });
 
       const vendorPoPartIds = new Set(vendorPoRows.map((row) => row.partId));
 
@@ -263,7 +252,7 @@ export async function deleteProduct(formData: FormData): Promise<ActionResult> {
       );
 
       if (partIdsToDelete.length > 0) {
-        await tx.delete(parts).where(inArray(parts.id, partIdsToDelete));
+        await tx.part.deleteMany({ where: { id: { in: partIdsToDelete } } });
       }
     });
 
@@ -276,14 +265,24 @@ export async function deleteProduct(formData: FormData): Promise<ActionResult> {
 }
 
 export async function getProductById(id: number) {
-  return db.query.products.findFirst({
-    where: eq(products.id, id),
-    with: {
+  const product = await prisma.product.findFirst({
+    where: { id },
+    include: {
       productParts: {
-        with: { part: true },
+        include: { part: true },
       },
     },
   });
+
+  if (!product) return null;
+
+  return {
+    ...mapProduct(product),
+    productParts: product.productParts.map((line) => ({
+      ...line,
+      part: mapPart(line.part),
+    })),
+  };
 }
 
 export async function addProductBomLine(
@@ -299,12 +298,14 @@ export async function addProductBomLine(
     return actionError("Quantity must be a positive integer");
 
   try {
-    await db.insert(productParts).values({
-      productId,
-      partId,
-      quantity,
-      itemNo: parseOptionalString(formData.get("itemNo")),
-      remarks: parseOptionalString(formData.get("remarks")),
+    await prisma.productPart.create({
+      data: {
+        productId,
+        partId,
+        quantity,
+        itemNo: parseOptionalString(formData.get("itemNo")),
+        remarks: parseOptionalString(formData.get("remarks")),
+      },
     });
     revalidatePath(`/products/${productId}`);
     revalidatePath("/products");
@@ -327,16 +328,14 @@ export async function updateProductBomLine(
     return actionError("Quantity must be a positive integer");
 
   try {
-    await db
-      .update(productParts)
-      .set({
+    await prisma.productPart.updateMany({
+      where: { id, productId },
+      data: {
         quantity,
         itemNo: parseOptionalString(formData.get("itemNo")),
         remarks: parseOptionalString(formData.get("remarks")),
-      })
-      .where(
-        and(eq(productParts.id, id), eq(productParts.productId, productId)),
-      );
+      },
+    });
     revalidatePath(`/products/${productId}`);
     revalidatePath("/products");
     return actionSuccess();
@@ -355,11 +354,9 @@ export async function removeProductBomLine(
   if (!Number.isFinite(productId)) return actionError("Invalid product id");
 
   try {
-    await db
-      .delete(productParts)
-      .where(
-        and(eq(productParts.id, id), eq(productParts.productId, productId)),
-      );
+    await prisma.productPart.deleteMany({
+      where: { id, productId },
+    });
     revalidatePath(`/products/${productId}`);
     revalidatePath("/products");
     return actionSuccess();

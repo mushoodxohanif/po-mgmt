@@ -28,7 +28,8 @@ import {
   createVendorPoAction,
   getVendorPoParts,
 } from "@/lib/actions/vendor-pos";
-import type { Vendor } from "@/lib/db/schema";
+import type { Vendor } from "@/lib/db/types";
+import { formatMoney } from "@/lib/services/money";
 
 type VendorOption = Pick<Vendor, "id" | "name">;
 
@@ -37,6 +38,7 @@ type PartOption = {
   name: string;
   specs?: Record<string, string> | null;
   description: string | null;
+  unitPrice: number | null;
 };
 
 type LineDraft = {
@@ -147,6 +149,20 @@ export function CreateVendorPoDialog({ vendors }: CreateVendorPoDialogProps) {
       )
     ) {
       toast.error("Quantities must be positive whole numbers");
+      return;
+    }
+
+    const unpriced = payload
+      .map((line) => availableParts.find((part) => part.id === line.partId))
+      .filter((part): part is PartOption => Boolean(part))
+      .filter((part) => part.unitPrice === null);
+
+    if (unpriced.length > 0) {
+      toast.error(
+        `Set a unit price for these part(s) on the vendor page first: ${unpriced
+          .map((part) => part.name)
+          .join(", ")}`,
+      );
       return;
     }
 
@@ -280,14 +296,18 @@ export function CreateVendorPoDialog({ vendors }: CreateVendorPoDialogProps) {
                                 <SelectItem
                                   key={part.id}
                                   value={String(part.id)}
+                                  disabled={part.unitPrice === null}
                                 >
                                   {partLabel(part)}
+                                  {part.unitPrice === null
+                                    ? " — no price set"
+                                    : ` — ${formatMoney(part.unitPrice)}`}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="grid w-24 gap-1.5">
+                        <div className="grid w-20 gap-1.5">
                           <Label
                             htmlFor={`vendor-po-qty-${index}`}
                             className="text-xs text-muted-foreground"
@@ -309,6 +329,23 @@ export function CreateVendorPoDialog({ vendors }: CreateVendorPoDialogProps) {
                             className="tabular-nums"
                           />
                         </div>
+                        <div className="grid w-24 gap-1.5">
+                          <Label className="text-xs text-muted-foreground">
+                            Line total
+                          </Label>
+                          <p className="h-9 content-center text-sm tabular-nums text-muted-foreground">
+                            {(() => {
+                              const part = availableParts.find(
+                                (p) => p.id === Number(line.partId),
+                              );
+                              const qty = Number(line.quantity);
+                              if (!part || part.unitPrice === null) return "—";
+                              return formatMoney(
+                                Number.isFinite(qty) ? qty * part.unitPrice : 0,
+                              );
+                            })()}
+                          </p>
+                        </div>
                         <Button
                           type="button"
                           variant="ghost"
@@ -323,6 +360,22 @@ export function CreateVendorPoDialog({ vendors }: CreateVendorPoDialogProps) {
                       </div>
                     );
                   })}
+                  <div className="flex justify-end border-t pt-2 text-sm font-medium">
+                    Total:{" "}
+                    {formatMoney(
+                      lines.reduce((sum, line) => {
+                        const part = availableParts.find(
+                          (p) => p.id === Number(line.partId),
+                        );
+                        const qty = Number(line.quantity);
+                        if (!part || part.unitPrice === null) return sum;
+                        return (
+                          sum +
+                          (Number.isFinite(qty) ? qty * part.unitPrice : 0)
+                        );
+                      }, 0),
+                    )}
+                  </div>
                 </div>
               )}
             </div>

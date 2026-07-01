@@ -18,17 +18,20 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { saveVendorPoVersionAction } from "@/lib/actions/vendor-pos";
+import { formatMoney } from "@/lib/services/money";
 
 type PartOption = {
   id: number;
   name: string;
   specs?: Record<string, string> | null;
   description: string | null;
+  unitPrice: number | null;
 };
 
 type EditorLine = {
@@ -112,6 +115,20 @@ export function VendorPoEditor({
       return;
     }
 
+    const unpriced = payload
+      .map((line) => availableParts.find((part) => part.id === line.partId))
+      .filter((part): part is PartOption => Boolean(part))
+      .filter((part) => part.unitPrice === null);
+
+    if (unpriced.length > 0) {
+      toast.error(
+        `Set a unit price for these part(s) on the vendor page first: ${unpriced
+          .map((part) => part.name)
+          .join(", ")}`,
+      );
+      return;
+    }
+
     const formData = new FormData();
     formData.set("vendorPoId", String(vendorPoId));
     formData.set("lines", JSON.stringify(payload));
@@ -140,7 +157,8 @@ export function VendorPoEditor({
           <TableHeader>
             <TableRow>
               <TableHead>Part</TableHead>
-              <TableHead className="w-[140px]">Quantity</TableHead>
+              <TableHead className="w-[100px]">Quantity</TableHead>
+              <TableHead className="w-[110px] text-right">Line total</TableHead>
               <TableHead className="w-[80px]" />
             </TableRow>
           </TableHeader>
@@ -148,7 +166,7 @@ export function VendorPoEditor({
             {lines.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={3}
+                  colSpan={4}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No lines. Add a part to continue.
@@ -161,6 +179,16 @@ export function VendorPoEditor({
                     part.id === Number(line.partId) ||
                     !usedPartIds.has(String(part.id)),
                 );
+                const selectedPart = availableParts.find(
+                  (part) => part.id === Number(line.partId),
+                );
+                const qty = Number(line.quantity);
+                const lineTotal =
+                  selectedPart && selectedPart.unitPrice !== null
+                    ? formatMoney(
+                        Number.isFinite(qty) ? qty * selectedPart.unitPrice : 0,
+                      )
+                    : "—";
 
                 return (
                   <TableRow key={line.id}>
@@ -177,8 +205,15 @@ export function VendorPoEditor({
                         </SelectTrigger>
                         <SelectContent>
                           {selectableParts.map((part) => (
-                            <SelectItem key={part.id} value={String(part.id)}>
+                            <SelectItem
+                              key={part.id}
+                              value={String(part.id)}
+                              disabled={part.unitPrice === null}
+                            >
                               {partLabel(part)}
+                              {part.unitPrice === null
+                                ? " — no price set"
+                                : ` — ${formatMoney(part.unitPrice)}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -197,6 +232,9 @@ export function VendorPoEditor({
                         className="tabular-nums"
                       />
                     </TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {lineTotal}
+                    </TableCell>
                     <TableCell>
                       <Button
                         type="button"
@@ -214,6 +252,30 @@ export function VendorPoEditor({
               })
             )}
           </TableBody>
+          {lines.length > 0 ? (
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={2} className="text-right font-medium">
+                  Total
+                </TableCell>
+                <TableCell className="text-right font-medium tabular-nums">
+                  {formatMoney(
+                    lines.reduce((sum, line) => {
+                      const part = availableParts.find(
+                        (p) => p.id === Number(line.partId),
+                      );
+                      const qty = Number(line.quantity);
+                      if (!part || part.unitPrice === null) return sum;
+                      return (
+                        sum + (Number.isFinite(qty) ? qty * part.unitPrice : 0)
+                      );
+                    }, 0),
+                  )}
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableFooter>
+          ) : null}
         </Table>
       </div>
 

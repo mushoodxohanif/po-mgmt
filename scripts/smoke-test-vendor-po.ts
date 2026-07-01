@@ -1,16 +1,8 @@
 import "dotenv/config";
 
 import { readFile, unlink } from "node:fs/promises";
-import { eq } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import {
-  parts,
-  vendorParts,
-  vendorPos,
-  vendorPoVersions,
-  vendors,
-} from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
 import { createVendorPo, saveVendorPoVersion } from "@/lib/services/vendor-po";
 import { getLocalPdfPath } from "@/lib/storage/pdf-storage";
 
@@ -18,18 +10,21 @@ const TEMP_VENDOR_NAME = "__smoke_test_vendor__";
 const TEMP_PART_NAME = "__smoke_test_part__";
 
 async function findVendorWithParts() {
-  const rows = await db
-    .select({
-      vendorId: vendors.id,
-      vendorName: vendors.name,
-      partId: parts.id,
-    })
-    .from(vendors)
-    .innerJoin(vendorParts, eq(vendorParts.vendorId, vendors.id))
-    .innerJoin(parts, eq(parts.id, vendorParts.partId))
-    .limit(1);
+  const row = await prisma.vendorPart.findFirst({
+    where: { unitPrice: { not: null } },
+    include: {
+      vendor: { select: { id: true, name: true } },
+      part: { select: { id: true } },
+    },
+  });
 
-  return rows[0] ?? null;
+  if (!row) return null;
+
+  return {
+    vendorId: row.vendor.id,
+    vendorName: row.vendor.name,
+    partId: row.part.id,
+  };
 }
 
 async function ensureTestFixture(): Promise<{
@@ -46,28 +41,29 @@ async function ensureTestFixture(): Promise<{
     };
   }
 
-  const [vendor] = await db
-    .insert(vendors)
-    .values({ name: TEMP_VENDOR_NAME })
-    .returning();
-  const [part] = await db
-    .insert(parts)
-    .values({
+  const vendor = await prisma.vendor.create({
+    data: { name: TEMP_VENDOR_NAME },
+  });
+  const part = await prisma.part.create({
+    data: {
       name: TEMP_PART_NAME,
       normalizedName: TEMP_PART_NAME.toLowerCase(),
-    })
-    .returning();
-  await db.insert(vendorParts).values({
-    vendorId: vendor.id,
-    partId: part.id,
+    },
+  });
+  await prisma.vendorPart.create({
+    data: {
+      vendorId: vendor.id,
+      partId: part.id,
+      unitPrice: 9.99,
+    },
   });
 
   return { vendorId: vendor.id, partId: part.id, createdFixture: true };
 }
 
 async function assertPdfExists(versionId: number, label: string) {
-  const version = await db.query.vendorPoVersions.findFirst({
-    where: eq(vendorPoVersions.id, versionId),
+  const version = await prisma.vendorPoVersion.findFirst({
+    where: { id: versionId },
   });
   if (!version) {
     throw new Error(`${label}: version ${versionId} not found in database`);
@@ -104,7 +100,7 @@ async function cleanup(
   versionIds: number[],
   fixture: { vendorId: number; partId: number; createdFixture: boolean },
 ) {
-  await db.delete(vendorPos).where(eq(vendorPos.id, vendorPoId));
+  await prisma.vendorPo.delete({ where: { id: vendorPoId } });
 
   for (const versionId of versionIds) {
     try {
@@ -116,11 +112,11 @@ async function cleanup(
 
   if (!fixture.createdFixture) return;
 
-  await db
-    .delete(vendorParts)
-    .where(eq(vendorParts.vendorId, fixture.vendorId));
-  await db.delete(parts).where(eq(parts.id, fixture.partId));
-  await db.delete(vendors).where(eq(vendors.id, fixture.vendorId));
+  await prisma.vendorPart.deleteMany({
+    where: { vendorId: fixture.vendorId },
+  });
+  await prisma.part.delete({ where: { id: fixture.partId } });
+  await prisma.vendor.delete({ where: { id: fixture.vendorId } });
 }
 
 async function main() {
@@ -143,9 +139,9 @@ async function main() {
   }
 
   const vendorPoId = createResult.vendorPoId;
-  const v1 = await db.query.vendorPoVersions.findFirst({
-    where: eq(vendorPoVersions.vendorPoId, vendorPoId),
-    orderBy: (v, { asc }) => [asc(v.versionNumber)],
+  const v1 = await prisma.vendorPoVersion.findFirst({
+    where: { vendorPoId },
+    orderBy: { versionNumber: "asc" },
   });
   if (!v1) throw new Error("Version 1 not created");
 
@@ -167,9 +163,9 @@ async function main() {
   await assertPdfExists(v1.id, "Original v1 PDF still present");
   await assertPdfExists(saveResult.versionId, "Save PO (v2)");
 
-  const versions = await db.query.vendorPoVersions.findMany({
-    where: eq(vendorPoVersions.vendorPoId, vendorPoId),
-    orderBy: (v, { asc }) => [asc(v.versionNumber)],
+  const versions = await prisma.vendorPoVersion.findMany({
+    where: { vendorPoId },
+    orderBy: { versionNumber: "asc" },
   });
 
   if (versions.length !== 2) {

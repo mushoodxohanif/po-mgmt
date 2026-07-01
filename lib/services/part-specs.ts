@@ -1,4 +1,4 @@
-import type { PartSpecs } from "@/lib/db/schema";
+import type { PartSpecs } from "@/lib/db/types";
 
 export type PartCategory =
   | "generic"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { VendorOptionForPart } from "@/lib/actions/parts";
 import type { ActionResult } from "@/lib/actions/types";
 import type { CatalogImageBlobUploadMode } from "@/lib/catalog-image-shared";
-import type { Part, PartSpecs } from "@/lib/db/schema";
+import type { Part, PartSpecs } from "@/lib/db/types";
 import {
   inferPartCategory,
   type PartCategory,
@@ -55,8 +55,7 @@ export function PartFormDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [vendorSelectKey, setVendorSelectKey] = useState(0);
-  const [imageEditorKey, setImageEditorKey] = useState(0);
+  const [formResetKey, setFormResetKey] = useState(0);
   const isEdit = Boolean(part);
 
   const [category, setCategory] = useState<PartCategory>(
@@ -85,8 +84,7 @@ export function PartFormDialog({
           (part?.name ? inferPartCategory(part.name) : "generic"),
       );
       setSpecs(part?.specs ?? {});
-      setVendorSelectKey((key) => key + 1);
-      setImageEditorKey((key) => key + 1);
+      setFormResetKey((key) => key + 1);
     }
     setOpen(nextOpen);
   }
@@ -145,20 +143,20 @@ export function PartFormDialog({
             />
           </div>
 
-          <VendorMultiSelect
-            key={vendorSelectKey}
-            vendors={availableVendors}
-            assignedVendorIds={assignedVendorIds}
-            disabled={pending}
-          />
+          <Fragment key={formResetKey}>
+            <VendorMultiSelect
+              vendors={availableVendors}
+              assignedVendorIds={assignedVendorIds}
+              disabled={pending}
+            />
 
-          <ImageAttachmentsEditor
-            key={imageEditorKey}
-            entityType="parts"
-            uploadMode={imageUploadMode}
-            initialUrls={part?.imageUrls ?? []}
-            disabled={pending}
-          />
+            <ImageAttachmentsEditor
+              entityType="parts"
+              uploadMode={imageUploadMode}
+              initialUrls={part?.imageUrls ?? []}
+              disabled={pending}
+            />
+          </Fragment>
 
           <DrawerFooter>
             <Button type="submit" disabled={pending}>

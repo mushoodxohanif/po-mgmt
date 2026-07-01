@@ -1,8 +1,5 @@
-import { eq } from "drizzle-orm";
-
-import { db } from "@/lib/db";
-import type { PartSpecs } from "@/lib/db/schema";
-import { parts } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { asPartSpecs, type PartSpecs } from "@/lib/db/types";
 import {
   buildPartInputFromImport,
   mergeSpecs,
@@ -54,14 +51,12 @@ export async function upsertPartRecord(
   input: PartUpsertInput,
 ): Promise<PartUpsertResult> {
   const normalizedName = normalizePartName(input.name);
-  const [existing] = await db
-    .select()
-    .from(parts)
-    .where(eq(parts.normalizedName, normalizedName))
-    .limit(1);
+  const existing = await prisma.part.findFirst({
+    where: { normalizedName },
+  });
 
   const nextSpecs = mergeSpecs(
-    existing?.specs,
+    existing ? asPartSpecs(existing.specs) : undefined,
     input.specs ?? {},
     input.mergeStrategy,
   );
@@ -77,8 +72,9 @@ export async function upsertPartRecord(
   );
 
   if (existing) {
+    const existingSpecs = asPartSpecs(existing.specs);
     const specsChanged =
-      JSON.stringify(existing.specs ?? {}) !== JSON.stringify(nextSpecs);
+      JSON.stringify(existingSpecs) !== JSON.stringify(nextSpecs);
     const hasChanges =
       existing.name !== input.name.trim() ||
       existing.description !== nextDescription ||
@@ -86,31 +82,30 @@ export async function upsertPartRecord(
       specsChanged;
 
     if (hasChanges) {
-      await db
-        .update(parts)
-        .set({
+      await prisma.part.update({
+        where: { id: existing.id },
+        data: {
           name: input.name.trim(),
           category: nextCategory,
           specs: nextSpecs,
           description: nextDescription,
-          updatedAt: new Date(),
-        })
-        .where(eq(parts.id, existing.id));
+        },
+      });
     }
 
     return { partId: existing.id, created: false, updated: hasChanges };
   }
 
-  const [inserted] = await db
-    .insert(parts)
-    .values({
+  const inserted = await prisma.part.create({
+    data: {
       name: input.name.trim(),
       normalizedName,
       category: input.category?.trim() || null,
       specs: input.specs ?? {},
       description: input.description?.trim() || null,
-    })
-    .returning({ id: parts.id });
+    },
+    select: { id: true },
+  });
 
   return { partId: inserted.id, created: true, updated: false };
 }

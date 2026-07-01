@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { PartSpecs } from "@/lib/db/schema";
+import type { PartSpecs } from "@/lib/db/types";
 import {
   CATEGORY_SPEC_SUGGESTIONS,
   formatSpecLabel,

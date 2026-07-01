@@ -1,9 +1,7 @@
 import path from "node:path";
-import { eq } from "drizzle-orm";
 import * as XLSX from "xlsx";
 
-import { db } from "@/lib/db";
-import { productParts, products } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
 import {
   applyImageUrl,
   type BomRowImageUrls,
@@ -139,11 +137,10 @@ export async function validateParsedSkuForImport(
     return null;
   }
 
-  const [existingProduct] = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(eq(products.modelCode, parsed.modelCode.trim()))
-    .limit(1);
+  const existingProduct = await prisma.product.findFirst({
+    where: { modelCode: parsed.modelCode.trim() },
+    select: { id: true },
+  });
 
   if (existingProduct) {
     return `Product with model code "${parsed.modelCode}" already exists`;
@@ -372,11 +369,9 @@ export async function importParsedSku(
     | "imagesSkipped"
   >
 > {
-  const [existingProduct] = await db
-    .select()
-    .from(products)
-    .where(eq(products.modelCode, parsed.modelCode))
-    .limit(1);
+  const existingProduct = await prisma.product.findFirst({
+    where: { modelCode: parsed.modelCode },
+  });
 
   let productId: number;
   let productCreated = false;
@@ -391,23 +386,20 @@ export async function importParsedSku(
 
     productId = existingProduct.id;
     if (existingProduct.displayName !== parsed.displayName) {
-      await db
-        .update(products)
-        .set({
-          displayName: parsed.displayName,
-          updatedAt: new Date(),
-        })
-        .where(eq(products.id, productId));
+      await prisma.product.update({
+        where: { id: productId },
+        data: { displayName: parsed.displayName },
+      });
       productUpdated = true;
     }
   } else {
-    const [inserted] = await db
-      .insert(products)
-      .values({
+    const inserted = await prisma.product.create({
+      data: {
         modelCode: parsed.modelCode,
         displayName: parsed.displayName,
-      })
-      .returning({ id: products.id });
+      },
+      select: { id: true },
+    });
     productId = inserted.id;
     productCreated = true;
   }
@@ -442,10 +434,10 @@ export async function importParsedSku(
     });
   }
 
-  await db.delete(productParts).where(eq(productParts.productId, productId));
+  await prisma.productPart.deleteMany({ where: { productId } });
 
   if (productPartRows.length > 0) {
-    await db.insert(productParts).values(productPartRows);
+    await prisma.productPart.createMany({ data: productPartRows });
   }
 
   return {

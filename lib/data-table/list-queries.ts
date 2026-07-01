@@ -1,17 +1,4 @@
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  exists,
-  ilike,
-  inArray,
-  not,
-  or,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import type { Prisma } from "@prisma/client";
 import type { getVendorPos } from "@/lib/actions/vendor-pos";
 import type {
   PartsListParams,
@@ -24,121 +11,145 @@ import {
   getPaginationOffset,
   type PaginatedResult,
 } from "@/lib/data-table/list-params";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import {
-  parts,
-  productParts,
-  products,
-  vendorParts,
-  vendorPos,
-  vendors,
-} from "@/lib/db/schema";
+  asImageUrls,
+  asPartSpecs,
+  mapVendorPoVersionLine,
+} from "@/lib/db/types";
 
-function buildPartsSearchCondition(query?: string): SQL | undefined {
+function buildPartsSearchCondition(
+  query?: string,
+): Prisma.PartWhereInput | undefined {
   const trimmed = query?.trim();
   if (!trimmed) return undefined;
 
-  const pattern = `%${trimmed}%`;
-  return or(
-    ilike(parts.name, pattern),
-    ilike(parts.description, pattern),
-    ilike(parts.category, pattern),
-  );
+  return {
+    OR: [
+      { name: { contains: trimmed, mode: "insensitive" } },
+      { description: { contains: trimmed, mode: "insensitive" } },
+      { category: { contains: trimmed, mode: "insensitive" } },
+    ],
+  };
 }
 
-function buildProductsSearchCondition(query?: string): SQL | undefined {
+function buildProductsSearchCondition(
+  query?: string,
+): Prisma.ProductWhereInput | undefined {
   const trimmed = query?.trim();
   if (!trimmed) return undefined;
 
-  const pattern = `%${trimmed}%`;
-  return or(
-    ilike(products.displayName, pattern),
-    ilike(products.modelCode, pattern),
-  );
+  return {
+    OR: [
+      { displayName: { contains: trimmed, mode: "insensitive" } },
+      { modelCode: { contains: trimmed, mode: "insensitive" } },
+    ],
+  };
 }
 
-function buildVendorsSearchCondition(query?: string): SQL | undefined {
+function buildVendorsSearchCondition(
+  query?: string,
+): Prisma.VendorWhereInput | undefined {
   const trimmed = query?.trim();
   if (!trimmed) return undefined;
 
-  const pattern = `%${trimmed}%`;
-  return or(
-    ilike(vendors.name, pattern),
-    ilike(vendors.contactName, pattern),
-    ilike(vendors.email, pattern),
-  );
+  return {
+    OR: [
+      { name: { contains: trimmed, mode: "insensitive" } },
+      { contactName: { contains: trimmed, mode: "insensitive" } },
+      { email: { contains: trimmed, mode: "insensitive" } },
+    ],
+  };
 }
 
-function buildVendorPartsExists() {
-  return exists(
-    db
-      .select({ one: sql`1` })
-      .from(vendorParts)
-      .where(eq(vendorParts.partId, parts.id)),
-  );
+function buildPartsWhere(params: PartsListParams): Prisma.PartWhereInput {
+  const conditions: Prisma.PartWhereInput[] = [];
+
+  const search = buildPartsSearchCondition(params.q);
+  if (search) conditions.push(search);
+
+  if (params.category) {
+    conditions.push({ category: params.category });
+  }
+
+  if (params.hasVendors === "yes") {
+    conditions.push({ vendorParts: { some: {} } });
+  } else if (params.hasVendors === "no") {
+    conditions.push({ vendorParts: { none: {} } });
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : {};
 }
 
-function buildVendorPartLinksExists() {
-  return exists(
-    db
-      .select({ one: sql`1` })
-      .from(vendorParts)
-      .where(eq(vendorParts.vendorId, vendors.id)),
-  );
+function buildProductsWhere(
+  params: ProductsListParams,
+): Prisma.ProductWhereInput {
+  const conditions: Prisma.ProductWhereInput[] = [];
+
+  const search = buildProductsSearchCondition(params.q);
+  if (search) conditions.push(search);
+
+  if (params.hasBom === "yes") {
+    conditions.push({ productParts: { some: {} } });
+  } else if (params.hasBom === "no") {
+    conditions.push({ productParts: { none: {} } });
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : {};
 }
 
-function buildProductBomExists() {
-  return exists(
-    db
-      .select({ one: sql`1` })
-      .from(productParts)
-      .where(eq(productParts.productId, products.id)),
-  );
+function buildVendorsWhere(params: VendorsListParams): Prisma.VendorWhereInput {
+  const conditions: Prisma.VendorWhereInput[] = [];
+
+  const search = buildVendorsSearchCondition(params.q);
+  if (search) conditions.push(search);
+
+  if (params.hasParts === "yes") {
+    conditions.push({ vendorParts: { some: {} } });
+  } else if (params.hasParts === "no") {
+    conditions.push({ vendorParts: { none: {} } });
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : {};
 }
 
 export async function getPartsPaginated(params: PartsListParams) {
   const offset = getPaginationOffset(params);
-  const vendorLinkExists = buildVendorPartsExists();
+  const where = buildPartsWhere(params);
 
-  const conditions = [
-    buildPartsSearchCondition(params.q),
-    params.category ? eq(parts.category, params.category) : undefined,
-    params.hasVendors === "yes"
-      ? vendorLinkExists
-      : params.hasVendors === "no"
-        ? not(vendorLinkExists)
-        : undefined,
-  ].filter((condition): condition is SQL => condition !== undefined);
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const [totalResult, rows] = await Promise.all([
-    db.select({ total: count() }).from(parts).where(whereClause),
-    db
-      .select({
-        id: parts.id,
-        name: parts.name,
-        normalizedName: parts.normalizedName,
-        category: parts.category,
-        specs: parts.specs,
-        imageUrls: parts.imageUrls,
-        description: parts.description,
-        createdAt: parts.createdAt,
-        updatedAt: parts.updatedAt,
-        vendorCount: count(vendorParts.id),
-        productCount: count(productParts.id),
-      })
-      .from(parts)
-      .leftJoin(vendorParts, eq(vendorParts.partId, parts.id))
-      .leftJoin(productParts, eq(productParts.partId, parts.id))
-      .where(whereClause)
-      .groupBy(parts.id)
-      .orderBy(asc(parts.name))
-      .limit(params.pageSize)
-      .offset(offset),
+  const [total, rows] = await Promise.all([
+    prisma.part.count({ where }),
+    prisma.part.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: offset,
+      take: params.pageSize,
+      include: {
+        _count: {
+          select: {
+            vendorParts: true,
+            productParts: true,
+          },
+        },
+      },
+    }),
   ]);
 
-  return buildPaginatedResult(rows, totalResult[0]?.total ?? 0, params);
+  const mappedRows = rows.map((part) => ({
+    id: part.id,
+    name: part.name,
+    normalizedName: part.normalizedName,
+    category: part.category,
+    specs: asPartSpecs(part.specs),
+    imageUrls: asImageUrls(part.imageUrls),
+    description: part.description,
+    createdAt: part.createdAt,
+    updatedAt: part.updatedAt,
+    vendorCount: part._count.vendorParts,
+    productCount: part._count.productParts,
+  }));
+
+  return buildPaginatedResult(mappedRows, total, params);
 }
 
 export type PartListRow = Awaited<
@@ -147,41 +158,34 @@ export type PartListRow = Awaited<
 
 export async function getProductsPaginated(params: ProductsListParams) {
   const offset = getPaginationOffset(params);
-  const bomExists = buildProductBomExists();
+  const where = buildProductsWhere(params);
 
-  const conditions = [
-    buildProductsSearchCondition(params.q),
-    params.hasBom === "yes"
-      ? bomExists
-      : params.hasBom === "no"
-        ? not(bomExists)
-        : undefined,
-  ].filter((condition): condition is SQL => condition !== undefined);
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const [totalResult, rows] = await Promise.all([
-    db.select({ total: count() }).from(products).where(whereClause),
-    db
-      .select({
-        id: products.id,
-        modelCode: products.modelCode,
-        displayName: products.displayName,
-        imageUrls: products.imageUrls,
-        createdAt: products.createdAt,
-        updatedAt: products.updatedAt,
-        bomLineCount: count(productParts.id),
-      })
-      .from(products)
-      .leftJoin(productParts, eq(productParts.productId, products.id))
-      .where(whereClause)
-      .groupBy(products.id)
-      .orderBy(asc(products.displayName))
-      .limit(params.pageSize)
-      .offset(offset),
+  const [total, rows] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      orderBy: { displayName: "asc" },
+      skip: offset,
+      take: params.pageSize,
+      include: {
+        _count: {
+          select: { productParts: true },
+        },
+      },
+    }),
   ]);
 
-  return buildPaginatedResult(rows, totalResult[0]?.total ?? 0, params);
+  const mappedRows = rows.map((product) => ({
+    id: product.id,
+    modelCode: product.modelCode,
+    displayName: product.displayName,
+    imageUrls: asImageUrls(product.imageUrls),
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+    bomLineCount: product._count.productParts,
+  }));
+
+  return buildPaginatedResult(mappedRows, total, params);
 }
 
 export type ProductListRow = Awaited<
@@ -190,121 +194,114 @@ export type ProductListRow = Awaited<
 
 export async function getVendorsPaginated(params: VendorsListParams) {
   const offset = getPaginationOffset(params);
-  const partLinkExists = buildVendorPartLinksExists();
+  const where = buildVendorsWhere(params);
 
-  const conditions = [
-    buildVendorsSearchCondition(params.q),
-    params.hasParts === "yes"
-      ? partLinkExists
-      : params.hasParts === "no"
-        ? not(partLinkExists)
-        : undefined,
-  ].filter((condition): condition is SQL => condition !== undefined);
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const [totalResult, rows] = await Promise.all([
-    db.select({ total: count() }).from(vendors).where(whereClause),
-    db
-      .select({
-        id: vendors.id,
-        name: vendors.name,
-        contactName: vendors.contactName,
-        email: vendors.email,
-        phone: vendors.phone,
-        address: vendors.address,
-        createdAt: vendors.createdAt,
-        updatedAt: vendors.updatedAt,
-        partCount: count(vendorParts.id),
-      })
-      .from(vendors)
-      .leftJoin(vendorParts, eq(vendorParts.vendorId, vendors.id))
-      .where(whereClause)
-      .groupBy(vendors.id)
-      .orderBy(asc(vendors.name))
-      .limit(params.pageSize)
-      .offset(offset),
+  const [total, rows] = await Promise.all([
+    prisma.vendor.count({ where }),
+    prisma.vendor.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: offset,
+      take: params.pageSize,
+      include: {
+        _count: {
+          select: { vendorParts: true },
+        },
+      },
+    }),
   ]);
 
-  return buildPaginatedResult(rows, totalResult[0]?.total ?? 0, params);
+  const mappedRows = rows.map((vendor) => ({
+    id: vendor.id,
+    name: vendor.name,
+    contactName: vendor.contactName,
+    email: vendor.email,
+    phone: vendor.phone,
+    address: vendor.address,
+    createdAt: vendor.createdAt,
+    updatedAt: vendor.updatedAt,
+    partCount: vendor._count.vendorParts,
+  }));
+
+  return buildPaginatedResult(mappedRows, total, params);
 }
 
 export type VendorListRow = Awaited<
   ReturnType<typeof getVendorsPaginated>
 >["rows"][number];
 
-async function buildVendorPoWhereClause(params: VendorPosListParams) {
-  const conditions: SQL[] = [];
+async function buildVendorPoWhere(
+  params: VendorPosListParams,
+): Promise<Prisma.VendorPoWhereInput> {
+  const conditions: Prisma.VendorPoWhereInput[] = [];
 
   if (params.vendorId) {
-    conditions.push(eq(vendorPos.vendorId, params.vendorId));
+    conditions.push({ vendorId: params.vendorId });
   }
 
   const trimmed = params.q?.trim();
   if (trimmed) {
-    const searchConditions: SQL[] = [];
+    const searchConditions: Prisma.VendorPoWhereInput[] = [];
     const asNumber = Number.parseInt(trimmed, 10);
 
     if (Number.isFinite(asNumber) && String(asNumber) === trimmed) {
-      searchConditions.push(eq(vendorPos.id, asNumber));
+      searchConditions.push({ id: asNumber });
     }
 
-    const matchingVendors = await db
-      .select({ id: vendors.id })
-      .from(vendors)
-      .where(ilike(vendors.name, `%${trimmed}%`));
+    const matchingVendors = await prisma.vendor.findMany({
+      where: { name: { contains: trimmed, mode: "insensitive" } },
+      select: { id: true },
+    });
 
     if (matchingVendors.length > 0) {
-      searchConditions.push(
-        inArray(
-          vendorPos.vendorId,
-          matchingVendors.map((vendor) => vendor.id),
-        ),
-      );
+      searchConditions.push({
+        vendorId: { in: matchingVendors.map((vendor) => vendor.id) },
+      });
     }
 
     if (searchConditions.length > 0) {
-      const searchClause = or(...searchConditions);
-      conditions.push(searchClause ?? sql`false`);
+      conditions.push({ OR: searchConditions });
     } else {
-      conditions.push(sql`false`);
+      conditions.push({ id: -1 });
     }
   }
 
-  return conditions.length > 0 ? and(...conditions) : undefined;
+  return conditions.length > 0 ? { AND: conditions } : {};
 }
 
 export async function getVendorPosPaginated(
   params: VendorPosListParams,
 ): Promise<PaginatedResult<Awaited<ReturnType<typeof getVendorPos>>[number]>> {
   const offset = getPaginationOffset(params);
-  const whereClause = await buildVendorPoWhereClause(params);
+  const where = await buildVendorPoWhere(params);
 
-  const [totalResult, rows] = await Promise.all([
-    db
-      .select({ total: count() })
-      .from(vendorPos)
-      .innerJoin(vendors, eq(vendorPos.vendorId, vendors.id))
-      .where(whereClause),
-    db.query.vendorPos.findMany({
-      where: whereClause,
-      orderBy: [desc(vendorPos.createdAt)],
-      limit: params.pageSize,
-      offset,
-      with: {
+  const [total, rawRows] = await Promise.all([
+    prisma.vendorPo.count({ where }),
+    prisma.vendorPo.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: offset,
+      take: params.pageSize,
+      include: {
         vendor: true,
         versions: {
-          orderBy: (versions, { desc: descVersion }) => [
-            descVersion(versions.versionNumber),
-          ],
-          limit: 1,
-          with: { lines: true },
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          include: { lines: true },
         },
       },
     }),
   ]);
 
-  return buildPaginatedResult(rows, totalResult[0]?.total ?? 0, params);
+  const rows = rawRows.map((po) => ({
+    ...po,
+    versions: po.versions.map((version) => ({
+      ...version,
+      lines: version.lines.map(mapVendorPoVersionLine),
+    })),
+  }));
+
+  return buildPaginatedResult(rows, total, params);
 }
 
 export type VendorPoListRow = Awaited<

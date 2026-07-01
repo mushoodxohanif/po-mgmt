@@ -15,6 +15,8 @@ import {
   VendorPoVersionHistory,
 } from "@/components/vendor-pos/vendor-po-editor";
 import { getVendorPoById, getVendorPoParts } from "@/lib/actions/vendor-pos";
+import { sumLineTotals } from "@/lib/db/types";
+import { formatMoney } from "@/lib/services/money";
 
 type VendorPoDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -41,6 +43,7 @@ export default async function VendorPoDetailPage({
   const latestVersion = vendorPo.versions[0];
   const totalQuantity =
     latestVersion?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
+  const totalAmount = sumLineTotals(latestVersion?.lines ?? []);
 
   const editorLines =
     latestVersion?.lines.map((line) => ({
@@ -74,7 +77,7 @@ export default async function VendorPoDetailPage({
         ) : null}
       </PageHeader>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Vendor</CardDescription>
@@ -101,6 +104,14 @@ export default async function VendorPoDetailPage({
             <CardDescription>Total quantity</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
               {totalQuantity}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total amount</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {formatMoney(totalAmount)}
             </CardTitle>
           </CardHeader>
         </Card>

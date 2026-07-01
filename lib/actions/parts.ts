@@ -1,6 +1,5 @@
 "use server";
 
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import {
@@ -12,8 +11,8 @@ import {
   actionError,
   actionSuccess,
 } from "@/lib/actions/types";
-import { db } from "@/lib/db";
-import { parts, vendorParts, vendors } from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { mapPart } from "@/lib/db/types";
 import { normalizePartName, parseSpecsJson } from "@/lib/services/part-specs";
 import { upsertPartRecord } from "@/lib/services/parts-catalog";
 
@@ -41,20 +40,20 @@ async function syncPartVendors(partId: number, vendorIds: number[]) {
   const uniqueVendorIds = [...new Set(vendorIds)];
 
   if (uniqueVendorIds.length > 0) {
-    const existingVendors = await db
-      .select({ id: vendors.id })
-      .from(vendors)
-      .where(inArray(vendors.id, uniqueVendorIds));
+    const existingVendors = await prisma.vendor.findMany({
+      where: { id: { in: uniqueVendorIds } },
+      select: { id: true },
+    });
 
     const validVendorIds = new Set(existingVendors.map((vendor) => vendor.id));
     const nextVendorIds = uniqueVendorIds.filter((id) =>
       validVendorIds.has(id),
     );
 
-    const currentLinks = await db
-      .select({ vendorId: vendorParts.vendorId })
-      .from(vendorParts)
-      .where(eq(vendorParts.partId, partId));
+    const currentLinks = await prisma.vendorPart.findMany({
+      where: { partId },
+      select: { vendorId: true },
+    });
 
     const currentVendorIds = new Set(currentLinks.map((link) => link.vendorId));
     const toAdd = nextVendorIds.filter((id) => !currentVendorIds.has(id));
@@ -63,49 +62,42 @@ async function syncPartVendors(partId: number, vendorIds: number[]) {
     );
 
     if (toAdd.length > 0) {
-      await db
-        .insert(vendorParts)
-        .values(toAdd.map((vendorId) => ({ vendorId, partId })))
-        .onConflictDoNothing();
+      await prisma.vendorPart.createMany({
+        data: toAdd.map((vendorId) => ({ vendorId, partId })),
+        skipDuplicates: true,
+      });
     }
 
     if (toRemove.length > 0) {
-      await db
-        .delete(vendorParts)
-        .where(
-          and(
-            eq(vendorParts.partId, partId),
-            inArray(vendorParts.vendorId, toRemove),
-          ),
-        );
+      await prisma.vendorPart.deleteMany({
+        where: { partId, vendorId: { in: toRemove } },
+      });
     }
   } else {
-    await db.delete(vendorParts).where(eq(vendorParts.partId, partId));
+    await prisma.vendorPart.deleteMany({ where: { partId } });
   }
 }
 
 export async function getVendorsForPartSelection(): Promise<
   VendorOptionForPart[]
 > {
-  const rows = await db
-    .select({
-      id: vendors.id,
-      name: vendors.name,
-      contactName: vendors.contactName,
-    })
-    .from(vendors)
-    .orderBy(asc(vendors.name));
-
-  return rows;
+  return prisma.vendor.findMany({
+    select: {
+      id: true,
+      name: true,
+      contactName: true,
+    },
+    orderBy: { name: "asc" },
+  });
 }
 
 export async function getPartVendorIdsMap(): Promise<Record<number, number[]>> {
-  const links = await db
-    .select({
-      partId: vendorParts.partId,
-      vendorId: vendorParts.vendorId,
-    })
-    .from(vendorParts);
+  const links = await prisma.vendorPart.findMany({
+    select: {
+      partId: true,
+      vendorId: true,
+    },
+  });
 
   const map: Record<number, number[]> = {};
   for (const link of links) {
@@ -124,11 +116,9 @@ export async function createPart(formData: FormData): Promise<ActionResult> {
   }
 
   const normalizedName = normalizePartName(name);
-  const [existing] = await db
-    .select()
-    .from(parts)
-    .where(eq(parts.normalizedName, normalizedName))
-    .limit(1);
+  const existing = await prisma.part.findFirst({
+    where: { normalizedName },
+  });
 
   if (existing) {
     return actionError("A part with this name already exists");
@@ -146,10 +136,10 @@ export async function createPart(formData: FormData): Promise<ActionResult> {
       description: readOptionalString(formData, "description"),
       mergeStrategy: "manual",
     });
-    await db
-      .update(parts)
-      .set({ imageUrls, updatedAt: new Date() })
-      .where(eq(parts.id, partId));
+    await prisma.part.update({
+      where: { id: partId },
+      data: { imageUrls },
+    });
     await syncPartVendors(partId, parseVendorIds(formData));
     revalidatePath("/parts");
     revalidatePath("/vendors");
@@ -169,11 +159,9 @@ export async function updatePart(formData: FormData): Promise<ActionResult> {
   }
 
   const normalizedName = normalizePartName(name);
-  const [duplicate] = await db
-    .select()
-    .from(parts)
-    .where(and(eq(parts.normalizedName, normalizedName), ne(parts.id, id)))
-    .limit(1);
+  const duplicate = await prisma.part.findFirst({
+    where: { normalizedName, NOT: { id } },
+  });
 
   if (duplicate) {
     return actionError("Another part with this name already exists");
@@ -184,18 +172,17 @@ export async function updatePart(formData: FormData): Promise<ActionResult> {
   if (imageUrlsError) return actionError(imageUrlsError);
 
   try {
-    await db
-      .update(parts)
-      .set({
+    await prisma.part.update({
+      where: { id },
+      data: {
         name: name.trim(),
         normalizedName,
         category: readOptionalString(formData, "category"),
         specs: parseSpecsJson(readOptionalString(formData, "specs")),
         description: readOptionalString(formData, "description"),
         imageUrls,
-        updatedAt: new Date(),
-      })
-      .where(eq(parts.id, id));
+      },
+    });
     await syncPartVendors(id, parseVendorIds(formData));
     revalidatePath("/parts");
     revalidatePath(`/parts/${id}`);
@@ -211,7 +198,7 @@ export async function deletePart(formData: FormData): Promise<ActionResult> {
   if (!Number.isFinite(id)) return actionError("Invalid part id");
 
   try {
-    await db.delete(parts).where(eq(parts.id, id));
+    await prisma.part.delete({ where: { id } });
     revalidatePath("/parts");
     return actionSuccess();
   } catch {
@@ -222,11 +209,15 @@ export async function deletePart(formData: FormData): Promise<ActionResult> {
 }
 
 export async function getPartById(id: number) {
-  return db.query.parts.findFirst({
-    where: eq(parts.id, id),
-    with: {
-      vendorParts: { with: { vendor: true } },
-      productParts: { with: { product: true } },
+  const part = await prisma.part.findFirst({
+    where: { id },
+    include: {
+      vendorParts: { include: { vendor: true } },
+      productParts: { include: { product: true } },
     },
   });
+
+  if (!part) return null;
+
+  return mapPart(part);
 }

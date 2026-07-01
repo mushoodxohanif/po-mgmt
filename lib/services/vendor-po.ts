@@ -1,15 +1,7 @@
-import { and, eq, inArray } from "drizzle-orm";
-
-import { db } from "@/lib/db";
-import {
-  parts,
-  vendorParts,
-  vendorPos,
-  vendorPoVersionLines,
-  vendorPoVersions,
-  vendors,
-} from "@/lib/db/schema";
+import { prisma } from "@/lib/db";
+import { asPartSpecs } from "@/lib/db/types";
 import { generateVendorPoPdfForVersion } from "@/lib/pdf/generate-vendor-po-pdf";
+import { decimalToNumber } from "@/lib/services/money";
 
 export type VendorPoLineInput = {
   partId: number;
@@ -50,60 +42,83 @@ function linesAreEqual(
   );
 }
 
-function validateVendorPoLines(
+type LineValidationResult =
+  | { ok: true; priceByPartId: Map<number, number> }
+  | { ok: false; error: string };
+
+async function validateVendorPoLines(
   vendorId: number,
   lines: VendorPoLineInput[],
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<LineValidationResult> {
   if (lines.length === 0) {
-    return Promise.resolve({
+    return {
       ok: false,
       error: "At least one line is required",
-    });
+    };
   }
 
   const partIds = [...new Set(lines.map((line) => line.partId))];
   if (partIds.length !== lines.length) {
-    return Promise.resolve({
+    return {
       ok: false,
       error: "Each part can only appear once",
-    });
+    };
   }
 
   for (const line of lines) {
     if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
-      return Promise.resolve({
+      return {
         ok: false,
         error: "All quantities must be positive whole numbers",
-      });
+      };
     }
   }
 
-  return db
-    .select({ partId: vendorParts.partId })
-    .from(vendorParts)
-    .where(
-      and(
-        eq(vendorParts.vendorId, vendorId),
-        inArray(vendorParts.partId, partIds),
-      ),
-    )
-    .then((assignedParts) => {
-      if (assignedParts.length !== partIds.length) {
-        return {
-          ok: false as const,
-          error: "All parts must be assigned to this vendor",
-        };
-      }
-      return { ok: true as const };
-    });
+  const assignedParts = await prisma.vendorPart.findMany({
+    where: { vendorId, partId: { in: partIds } },
+    include: { part: { select: { name: true } } },
+  });
+
+  const assignedByPartId = new Map(
+    assignedParts.map((row) => [row.partId, row]),
+  );
+
+  const unassignedPartIds = partIds.filter(
+    (partId) => !assignedByPartId.has(partId),
+  );
+  if (unassignedPartIds.length > 0) {
+    return {
+      ok: false,
+      error: "All parts must be assigned to this vendor",
+    };
+  }
+
+  const missingPriceParts = assignedParts.filter(
+    (row) => row.unitPrice === null,
+  );
+  if (missingPriceParts.length > 0) {
+    const names = missingPriceParts.map((row) => row.part.name).join(", ");
+    return {
+      ok: false,
+      error: `Set a unit price for these part(s) on the vendor page before creating a PO: ${names}`,
+    };
+  }
+
+  const priceByPartId = new Map<number, number>();
+  for (const row of assignedParts) {
+    const price = decimalToNumber(row.unitPrice);
+    if (price !== null) priceByPartId.set(row.partId, price);
+  }
+
+  return { ok: true, priceByPartId };
 }
 
 export async function createVendorPo(
   vendorId: number,
   lines: VendorPoLineInput[],
 ): Promise<CreateVendorPoResult> {
-  const vendor = await db.query.vendors.findFirst({
-    where: eq(vendors.id, vendorId),
+  const vendor = await prisma.vendor.findFirst({
+    where: { id: vendorId },
   });
 
   if (!vendor) {
@@ -115,25 +130,29 @@ export async function createVendorPo(
     return { success: false, error: validation.error };
   }
 
-  try {
-    const { vendorPoId, versionId } = await db.transaction(async (tx) => {
-      const [po] = await tx.insert(vendorPos).values({ vendorId }).returning();
+  const { priceByPartId } = validation;
 
-      const [version] = await tx
-        .insert(vendorPoVersions)
-        .values({
+  try {
+    const { vendorPoId, versionId } = await prisma.$transaction(async (tx) => {
+      const po = await tx.vendorPo.create({
+        data: { vendorId },
+      });
+
+      const version = await tx.vendorPoVersion.create({
+        data: {
           vendorPoId: po.id,
           versionNumber: 1,
-        })
-        .returning();
+        },
+      });
 
-      await tx.insert(vendorPoVersionLines).values(
-        lines.map((line) => ({
+      await tx.vendorPoVersionLine.createMany({
+        data: lines.map((line) => ({
           vendorPoVersionId: version.id,
           partId: line.partId,
           quantity: line.quantity,
+          unitPrice: priceByPartId.get(line.partId) ?? 0,
         })),
-      );
+      });
 
       return { vendorPoId: po.id, versionId: version.id };
     });
@@ -154,34 +173,32 @@ export async function createVendorPo(
 }
 
 export async function getVendorPoParts(vendorId: number) {
-  const rows = await db
-    .select({
-      id: parts.id,
-      name: parts.name,
-      specs: parts.specs,
-      description: parts.description,
-    })
-    .from(vendorParts)
-    .innerJoin(parts, eq(vendorParts.partId, parts.id))
-    .where(eq(vendorParts.vendorId, vendorId))
-    .orderBy(parts.name);
+  const rows = await prisma.vendorPart.findMany({
+    where: { vendorId },
+    include: { part: true },
+    orderBy: { part: { name: "asc" } },
+  });
 
-  return rows;
+  return rows.map((row) => ({
+    id: row.part.id,
+    name: row.part.name,
+    specs: asPartSpecs(row.part.specs),
+    description: row.part.description,
+    unitPrice: decimalToNumber(row.unitPrice),
+  }));
 }
 
 export async function saveVendorPoVersion(
   vendorPoId: number,
   lines: VendorPoLineInput[],
 ): Promise<SaveVendorPoVersionResult> {
-  const vendorPo = await db.query.vendorPos.findFirst({
-    where: eq(vendorPos.id, vendorPoId),
-    with: {
+  const vendorPo = await prisma.vendorPo.findFirst({
+    where: { id: vendorPoId },
+    include: {
       versions: {
-        orderBy: (versions, { desc: descVersion }) => [
-          descVersion(versions.versionNumber),
-        ],
-        limit: 1,
-        with: { lines: true },
+        orderBy: { versionNumber: "desc" },
+        take: 1,
+        include: { lines: true },
       },
     },
   });
@@ -194,6 +211,8 @@ export async function saveVendorPoVersion(
   if (!validation.ok) {
     return { success: false, error: validation.error };
   }
+
+  const { priceByPartId } = validation;
 
   const latestVersion = vendorPo.versions[0];
   const currentLines: VendorPoLineInput[] =
@@ -209,27 +228,27 @@ export async function saveVendorPoVersion(
   const nextVersionNumber = (latestVersion?.versionNumber ?? 0) + 1;
 
   try {
-    const versionId = await db.transaction(async (tx) => {
-      const [version] = await tx
-        .insert(vendorPoVersions)
-        .values({
+    const versionId = await prisma.$transaction(async (tx) => {
+      const version = await tx.vendorPoVersion.create({
+        data: {
           vendorPoId,
           versionNumber: nextVersionNumber,
-        })
-        .returning();
+        },
+      });
 
-      await tx.insert(vendorPoVersionLines).values(
-        lines.map((line) => ({
+      await tx.vendorPoVersionLine.createMany({
+        data: lines.map((line) => ({
           vendorPoVersionId: version.id,
           partId: line.partId,
           quantity: line.quantity,
+          unitPrice: priceByPartId.get(line.partId) ?? 0,
         })),
-      );
+      });
 
-      await tx
-        .update(vendorPos)
-        .set({ updatedAt: new Date() })
-        .where(eq(vendorPos.id, vendorPoId));
+      await tx.vendorPo.update({
+        where: { id: vendorPoId },
+        data: { updatedAt: new Date() },
+      });
 
       return version.id;
     });

@@ -13,7 +13,8 @@ import {
 } from "@/lib/data-table/list-params";
 import type { VendorPoListRow } from "@/lib/data-table/list-queries";
 import type { PaginatedResult } from "@/lib/data-table/pagination";
-import type { Vendor } from "@/lib/db/schema";
+import { sumLineTotals, type Vendor } from "@/lib/db/types";
+import { formatMoney } from "@/lib/services/money";
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -72,6 +73,15 @@ export function VendorPosDataTable({
       cell: ({ row }) => (
         <span className="tabular-nums text-muted-foreground">
           {row.original.versions[0]?.lines.length ?? 0}
+        </span>
+      ),
+    },
+    {
+      id: "total",
+      header: "Total",
+      cell: ({ row }) => (
+        <span className="tabular-nums">
+          {formatMoney(sumLineTotals(row.original.versions[0]?.lines ?? []))}
         </span>
       ),
     },
