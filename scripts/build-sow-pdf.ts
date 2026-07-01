@@ -7,8 +7,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const rootDir = path.join(import.meta.dir, "..");
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.join(scriptDir, "..");
 const docsDir = path.join(rootDir, "docs");
 const diagramsDir = path.join(docsDir, "diagrams");
 const mdPath = path.join(docsDir, "STATEMENT_OF_WORK.md");
