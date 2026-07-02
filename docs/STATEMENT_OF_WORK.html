@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc 3.10" />
@@ -10,1507 +9,248 @@
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
     */
-    span.smallcaps {
-      font-variant: small-caps;
-    }
-
-    div.columns {
-      display: flex;
-      gap: 1.5em;
-    }
-
-    div.column {
-      flex: auto;
-    }
-
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
     @media screen {
-      div.columns {
-        gap: min(4vw, 1.5em);
-      }
-
-      div.column {
-        overflow-x: auto;
-      }
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
     }
-
-    div.hanging-indent {
-      margin-left: 1.5em;
-      text-indent: -1.5em;
-    }
-
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
     /* The extra [class] is a hack that increases specificity enough to
        override a similar rule in reveal.js */
-    ul.task-list[class] {
-      list-style: none;
-    }
-
+    ul.task-list[class]{list-style: none;}
     ul.task-list li input[type="checkbox"] {
       font-size: inherit;
       width: 0.8em;
       margin: 0 0.8em 0.2em -1.6em;
       vertical-align: middle;
     }
-
-    .display.math {
-      display: block;
-      text-align: center;
-      margin: 0.5rem auto;
-    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
   <link rel="stylesheet" href="sow-print.css" />
 </head>
-
 <body>
-  <header id="title-block-header">
-    <h1 class="title">Statement of Work</h1>
-  </header>
-  <h1 id="statement-of-work-sow">Statement of Work (SOW)</h1>
-  <h2 id="vendor-purchase-order-management-system">Vendor Purchase Order
-    Management System</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Field</th>
-        <th>Detail</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Project</strong></td>
-        <td>PO Management (<code>po-mgmt</code>)</td>
-      </tr>
-      <tr>
-        <td><strong>Version</strong></td>
-        <td>1.0</td>
-      </tr>
-      <tr>
-        <td><strong>Date</strong></td>
-        <td>1 July 2026</td>
-      </tr>
-      <tr>
-        <td><strong>Status</strong></td>
-        <td>In development</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <h2 id="executive-summary">1. Executive Summary</h2>
-  <p>This project delivers a web-based <strong>Vendor Purchase Order
-      Management System</strong> for manufacturing operations. The system
-    centralizes master data for vendors, parts, and products (with Bills of
-    Materials), and enables procurement teams to create, version, and export
-    vendor purchase orders as PDFs.</p>
-  <p>The platform supports two procurement workflows:</p>
-  <ol type="1">
-    <li><strong>Manual PO creation</strong> — select a vendor, add part
-      lines with quantities, and generate a versioned PDF.</li>
-    <li><strong>BOM-driven PO generation</strong> — define a build plan
-      (products × build quantities), aggregate part demand across BOMs,
-      resolve vendor assignments and pricing, and generate one PO per
-      vendor.</li>
-  </ol>
-  <figure>
-    <img src="diagrams/diagram-1.png" alt="diagram-1" />
-    <figcaption aria-hidden="true">diagram-1</figcaption>
-  </figure>
-  <hr />
-  <h2 id="business-requirements-and-needs">2. Business Requirements and
-    Needs</h2>
-  <h3 id="business-context">2.1 Business Context</h3>
-  <p>Manufacturing teams currently manage product BOMs in spreadsheets and
-    create vendor purchase orders manually. This leads to:</p>
-  <ul>
-    <li><strong>Data fragmentation</strong> — vendor, part, and product
-      information lives in disconnected Excel files.</li>
-    <li><strong>Manual PO assembly</strong> — procurement staff must
-      manually calculate quantities when building multiple products.</li>
-    <li><strong>No audit trail</strong> — changes to purchase orders are not
-      versioned or easily traceable.</li>
-    <li><strong>Inconsistent part catalog</strong> — duplicate or
-      inconsistently named parts across product lines.</li>
-  </ul>
-  <p>The system addresses these needs by providing a single source of
-    truth for master data, automated demand aggregation from BOMs,
-    vendor-scoped part pricing, and immutable versioned PO PDFs.</p>
-  <h3 id="business-objectives">2.2 Business Objectives</h3>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 36%" />
-      <col style="width: 53%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Objective</th>
-        <th>Success Metric</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>BO-1</td>
-        <td>Centralize vendor, part, and product master data</td>
-        <td>All catalog data manageable in one application</td>
-      </tr>
-      <tr>
-        <td>BO-2</td>
-        <td>Reduce time to create vendor POs</td>
-        <td>PO creation in minutes vs. manual spreadsheet work</td>
-      </tr>
-      <tr>
-        <td>BO-3</td>
-        <td>Enable bulk PO generation from production build plans</td>
-        <td>One action produces POs grouped by vendor</td>
-      </tr>
-      <tr>
-        <td>BO-4</td>
-        <td>Maintain PO change history</td>
-        <td>Every material change creates a new downloadable PDF version</td>
-      </tr>
-      <tr>
-        <td>BO-5</td>
-        <td>Support bulk catalog onboarding</td>
-        <td>Excel BOM import creates products, parts, and BOM lines in one
-          step</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="stakeholders">2.3 Stakeholders</h3>
-  <table>
-    <colgroup>
-      <col style="width: 27%" />
-      <col style="width: 72%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Role</th>
-        <th>Responsibility</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Procurement / Purchasing</strong></td>
-        <td>Create and edit vendor POs, assign parts to vendors, set unit
-          prices</td>
-      </tr>
-      <tr>
-        <td><strong>Product / Engineering</strong></td>
-        <td>Maintain product BOMs, import SKU spreadsheets, manage part
-          specifications</td>
-      </tr>
-      <tr>
-        <td><strong>Operations / Production Planning</strong></td>
-        <td>Define build plans and trigger BOM-driven PO generation</td>
-      </tr>
-      <tr>
-        <td><strong>Management</strong></td>
-        <td>Review dashboard metrics and recent PO activity</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="scope">2.4 Scope</h3>
-  <p><strong>In scope</strong></p>
-  <ul>
-    <li>Vendor, part, and product CRUD</li>
-    <li>Structured part specifications by category (LED driver, PCB,
-      fastener, etc.)</li>
-    <li>Excel BOM import with embedded image extraction</li>
-    <li>Manual product BOM editing</li>
-    <li>Vendor–part assignment with per-vendor unit pricing</li>
-    <li>Manual vendor PO creation and editing</li>
-    <li>BOM-driven build plan PO generation with vendor resolution</li>
-    <li>PO versioning with PDF export per version</li>
-    <li>Dashboard with entity counts and recent PO activity</li>
-    <li>Image storage for parts, products, and BOM line images</li>
-  </ul>
-  <p><strong>Out of scope (v1)</strong></p>
-  <ul>
-    <li>User authentication and role-based access control</li>
-    <li>Inventory / stock tracking and goods receipt</li>
-    <li>Multi-currency support beyond a single configured currency</li>
-    <li>Email delivery of POs to vendors</li>
-    <li>Approval workflows for PO issuance</li>
-    <li>Integration with ERP or accounting systems</li>
-    <li>Purchase order delivery status / fulfillment tracking</li>
-  </ul>
-  <h3 id="user-stories-and-use-cases">2.5 User Stories and Use Cases</h3>
-  <h4 id="epic-1-master-data-management">Epic 1: Master Data
-    Management</h4>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 32%" />
-      <col style="width: 56%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>User Story</th>
-        <th>Acceptance Criteria</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>US-1.1</td>
-        <td>As a procurement user, I want to create and manage vendor records so
-          that supplier contact information is centralized.</td>
-        <td>User can create, view, edit, and delete vendors with name, contact,
-          email, phone, and address.</td>
-      </tr>
-      <tr>
-        <td>US-1.2</td>
-        <td>As an engineering user, I want to maintain a parts catalog with
-          structured specifications so that parts are consistently described
-          across products.</td>
-        <td>User can create parts with name, category, JSON specs, description,
-          and images. Spec fields vary by category (e.g. LED driver: input/output
-          voltage, power).</td>
-      </tr>
-      <tr>
-        <td>US-1.3</td>
-        <td>As an engineering user, I want to create products with model codes
-          and display names so that finished goods are identifiable.</td>
-        <td>User can create products with unique model codes, display names, and
-          product images.</td>
-      </tr>
-      <tr>
-        <td>US-1.4</td>
-        <td>As an engineering user, I want to import product BOMs from Excel so
-          that I can onboard catalog data in bulk.</td>
-        <td>Uploading a <code>.xlsx</code> file creates/updates a product,
-          upserts parts, replaces BOM lines, and extracts embedded images.</td>
-      </tr>
-      <tr>
-        <td>US-1.5</td>
-        <td>As an engineering user, I want to manually edit a product BOM so
-          that I can adjust lines without re-importing.</td>
-        <td>User can add, edit, and remove BOM lines on the product detail page
-          by selecting existing parts.</td>
-      </tr>
-    </tbody>
-  </table>
-  <p><strong>Use Case UC-1: Excel BOM Import</strong></p>
-  <table>
-    <colgroup>
-      <col style="width: 35%" />
-      <col style="width: 65%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Field</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Actor</strong></td>
-        <td>Engineering / Product user</td>
-      </tr>
-      <tr>
-        <td><strong>Preconditions</strong></td>
-        <td>User has a valid product BOM spreadsheet (<code>.xlsx</code>)</td>
-      </tr>
-      <tr>
-        <td><strong>Main flow</strong></td>
-        <td>1. User uploads file from Products page or product detail page. 2.
-          System parses display name (B2), model code (B3), and BOM rows (row 6+).
-          3. System upserts parts with normalized names and parsed specs. 4.
-          System replaces product BOM and stores extracted images. 5. User sees
-          import summary with any skipped rows.</td>
-      </tr>
-      <tr>
-        <td><strong>Alternate flow</strong></td>
-        <td>Duplicate part names within the same file are rejected with a clear
-          error.</td>
-      </tr>
-      <tr>
-        <td><strong>Postconditions</strong></td>
-        <td>Product, parts, and BOM are persisted; images stored in blob
-          storage.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="epic-2-vendorpart-relationships">Epic 2: Vendor–Part
-    Relationships</h4>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 32%" />
-      <col style="width: 56%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>User Story</th>
-        <th>Acceptance Criteria</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>US-2.1</td>
-        <td>As a procurement user, I want to assign parts to a vendor so that PO
-          line pickers are scoped to that vendor’s catalog.</td>
-        <td>On vendor detail page, user can assign/unassign parts and set unit
-          price per assignment.</td>
-      </tr>
-      <tr>
-        <td>US-2.2</td>
-        <td>As a procurement user, I want unit prices stored per vendor–part
-          pair so that PO totals are calculated automatically.</td>
-        <td>Unit price is optional on assignment; PO creation requires a price
-          for every line.</td>
-      </tr>
-    </tbody>
-  </table>
-  <p><strong>Use Case UC-2: Assign Part to Vendor</strong></p>
-  <table>
-    <colgroup>
-      <col style="width: 35%" />
-      <col style="width: 65%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Field</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Actor</strong></td>
-        <td>Procurement user</td>
-      </tr>
-      <tr>
-        <td><strong>Preconditions</strong></td>
-        <td>Vendor and part exist in the system</td>
-      </tr>
-      <tr>
-        <td><strong>Main flow</strong></td>
-        <td>1. User opens vendor detail page. 2. User searches available parts
-          and assigns one with optional unit price. 3. Part appears in vendor’s
-          assigned parts table.</td>
-      </tr>
-      <tr>
-        <td><strong>Postconditions</strong></td>
-        <td><code>VendorPart</code> record created; part available in PO
-          creation for that vendor.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="epic-3-vendor-purchase-orders-manual">Epic 3: Vendor Purchase
-    Orders (Manual)</h4>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 32%" />
-      <col style="width: 56%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>User Story</th>
-        <th>Acceptance Criteria</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>US-3.1</td>
-        <td>As a procurement user, I want to create a vendor PO by selecting
-          parts and quantities so that I can order from a specific supplier.</td>
-        <td>User picks vendor, adds lines (part + quantity), saves. Version 1 is
-          created with PDF.</td>
-      </tr>
-      <tr>
-        <td>US-3.2</td>
-        <td>As a procurement user, I want to edit an existing PO so that I can
-          adjust quantities or add/remove lines.</td>
-        <td>Saving material changes creates a new version; unchanged saves do
-          not create a new version.</td>
-      </tr>
-      <tr>
-        <td>US-3.3</td>
-        <td>As a procurement user, I want to download a PDF for any PO version
-          so that I can send it to the vendor.</td>
-        <td>Each version has a downloadable PDF with vendor details, line items,
-          quantities, unit prices, and totals.</td>
-      </tr>
-      <tr>
-        <td>US-3.4</td>
-        <td>As a procurement user, I want PO line pickers scoped to the vendor’s
-          assigned parts so that I only see relevant parts.</td>
-        <td>Part selector on PO editor shows only parts assigned to the selected
-          vendor.</td>
-      </tr>
-    </tbody>
-  </table>
-  <p><strong>Use Case UC-3: Create and Version a Vendor PO</strong></p>
-  <table>
-    <colgroup>
-      <col style="width: 35%" />
-      <col style="width: 65%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Field</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Actor</strong></td>
-        <td>Procurement user</td>
-      </tr>
-      <tr>
-        <td><strong>Preconditions</strong></td>
-        <td>Vendor exists with assigned parts (priced)</td>
-      </tr>
-      <tr>
-        <td><strong>Main flow</strong></td>
-        <td>1. User creates PO for vendor, adds part lines with quantities. 2.
-          System validates all parts are assigned to vendor with prices. 3. System
-          creates PO, version 1, generates PDF, stores PDF URL. 4. User later
-          edits lines and saves. 5. System detects change, creates version 2 with
-          new PDF.</td>
-      </tr>
-      <tr>
-        <td><strong>Postconditions</strong></td>
-        <td>PO has version history; each version PDF is retained and
-          downloadable.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="epic-4-bom-driven-po-generation">Epic 4: BOM-Driven PO
-    Generation</h4>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 32%" />
-      <col style="width: 56%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>User Story</th>
-        <th>Acceptance Criteria</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>US-4.1</td>
-        <td>As a production planner, I want to define a build plan (products ×
-          quantities) so that part demand is calculated automatically.</td>
-        <td>User adds one or more product rows with build quantities in the
-          Generate from BOM dialog.</td>
-      </tr>
-      <tr>
-        <td>US-4.2</td>
-        <td>As a production planner, I want to preview aggregated part demand
-          before generating POs so that I can resolve issues.</td>
-        <td>Preview shows per-part totals, demand sources, vendor options, and
-          status (resolved / unassigned / ambiguous / unpriced).</td>
-      </tr>
-      <tr>
-        <td>US-4.3</td>
-        <td>As a production planner, I want ambiguous vendor assignments
-          resolved manually so that parts with multiple suppliers are handled
-          correctly.</td>
-        <td>User can override vendor selection for parts with multiple assigned
-          vendors.</td>
-      </tr>
-      <tr>
-        <td>US-4.4</td>
-        <td>As a production planner, I want POs grouped by vendor so that one PO
-          is created per supplier.</td>
-        <td>Generating from build plan creates one PO per vendor with aggregated
-          lines.</td>
-      </tr>
-    </tbody>
-  </table>
-  <p><strong>Use Case UC-4: Generate POs from Build Plan</strong></p>
-  <table>
-    <colgroup>
-      <col style="width: 35%" />
-      <col style="width: 65%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Field</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Actor</strong></td>
-        <td>Production planner / Procurement user</td>
-      </tr>
-      <tr>
-        <td><strong>Preconditions</strong></td>
-        <td>Products have BOM lines; parts assigned to vendors with prices</td>
-      </tr>
-      <tr>
-        <td><strong>Main flow</strong></td>
-        <td>1. User opens “Generate from BOM” on Vendor POs page. 2. User adds
-          products and build quantities. 3. User previews demand; resolves
-          ambiguous/unpriced/unassigned parts. 4. User confirms generation. 5.
-          System creates one PO per vendor, each with version 1 and PDF. 6. User
-          is redirected to vendor PO list.</td>
-      </tr>
-      <tr>
-        <td><strong>Alternate flow</strong></td>
-        <td>Products with empty BOMs or unresolved parts block generation with
-          actionable error messages.</td>
-      </tr>
-      <tr>
-        <td><strong>Postconditions</strong></td>
-        <td>One or more vendor POs created with correct aggregated
-          quantities.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="epic-5-dashboard-and-reporting">Epic 5: Dashboard and
-    Reporting</h4>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 32%" />
-      <col style="width: 56%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>User Story</th>
-        <th>Acceptance Criteria</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>US-5.1</td>
-        <td>As a manager, I want a dashboard overview so that I can see catalog
-          and PO activity at a glance.</td>
-        <td>Dashboard shows counts for vendors, parts, products, and POs, plus a
-          table of the 5 most recent POs.</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <h2 id="technical-requirements-and-needs">3. Technical Requirements and
-    Needs</h2>
-  <h3 id="technology-stack">3.1 Technology Stack</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Layer</th>
-        <th>Technology</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Framework</strong></td>
-        <td>Next.js 16 (App Router)</td>
-      </tr>
-      <tr>
-        <td><strong>Language</strong></td>
-        <td>TypeScript 5</td>
-      </tr>
-      <tr>
-        <td><strong>UI</strong></td>
-        <td>React 19, shadcn/ui, Tailwind CSS 4</td>
-      </tr>
-      <tr>
-        <td><strong>Data tables</strong></td>
-        <td>TanStack React Table</td>
-      </tr>
-      <tr>
-        <td><strong>Database</strong></td>
-        <td>PostgreSQL (Neon serverless)</td>
-      </tr>
-      <tr>
-        <td><strong>ORM</strong></td>
-        <td>Prisma 7</td>
-      </tr>
-      <tr>
-        <td><strong>File storage</strong></td>
-        <td>Vercel Blob (PDFs, catalog images, BOM images)</td>
-      </tr>
-      <tr>
-        <td><strong>PDF generation</strong></td>
-        <td><span class="citation" data-cites="react-pdf/renderer">@react-pdf/renderer</span></td>
-      </tr>
-      <tr>
-        <td><strong>Excel parsing</strong></td>
-        <td>SheetJS (<code>xlsx</code>)</td>
-      </tr>
-      <tr>
-        <td><strong>Runtime / package manager</strong></td>
-        <td>Bun</td>
-      </tr>
-      <tr>
-        <td><strong>Linting / formatting</strong></td>
-        <td>Biome</td>
-      </tr>
-      <tr>
-        <td><strong>Deployment target</strong></td>
-        <td>Vercel</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="system-architecture">3.2 System Architecture</h3>
-  <figure>
-    <img src="diagrams/diagram-2.png" alt="diagram-2" />
-    <figcaption aria-hidden="true">diagram-2</figcaption>
-  </figure>
-  <h3 id="data-model">3.3 Data Model</h3>
-  <figure>
-    <img src="diagrams/diagram-3.png" alt="diagram-3" />
-    <figcaption aria-hidden="true">diagram-3</figcaption>
-  </figure>
-  <table>
-    <colgroup>
-      <col style="width: 22%" />
-      <col style="width: 34%" />
-      <col style="width: 42%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Entity</th>
-        <th>Key Fields</th>
-        <th>Relationships</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Vendor</strong></td>
-        <td>name, contact, email, phone, address</td>
-        <td>→ VendorPart, VendorPo</td>
-      </tr>
-      <tr>
-        <td><strong>Part</strong></td>
-        <td>name, normalizedName, category, specs (JSON), imageUrls,
-          description</td>
-        <td>→ ProductPart, VendorPart, VendorPoVersionLine</td>
-      </tr>
-      <tr>
-        <td><strong>Product</strong></td>
-        <td>modelCode, displayName, imageUrls</td>
-        <td>→ ProductPart (BOM)</td>
-      </tr>
-      <tr>
-        <td><strong>ProductPart</strong></td>
-        <td>itemNo, quantity, remarks, BOM images</td>
-        <td>Product ↔︎ Part</td>
-      </tr>
-      <tr>
-        <td><strong>VendorPart</strong></td>
-        <td>unitPrice</td>
-        <td>Vendor ↔︎ Part (unique pair)</td>
-      </tr>
-      <tr>
-        <td><strong>VendorPo</strong></td>
-        <td>vendorId</td>
-        <td>→ VendorPoVersion[]</td>
-      </tr>
-      <tr>
-        <td><strong>VendorPoVersion</strong></td>
-        <td>versionNumber, pdfUrl</td>
-        <td>→ VendorPoVersionLine[]</td>
-      </tr>
-      <tr>
-        <td><strong>VendorPoVersionLine</strong></td>
-        <td>quantity, unitPrice (snapshot)</td>
-        <td>Part reference</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="functional-requirements">3.4 Functional Requirements</h3>
-  <h4 id="fr-1-vendor-management">FR-1: Vendor Management</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-1.1</td>
-        <td>System shall provide paginated, searchable list of vendors.</td>
-      </tr>
-      <tr>
-        <td>FR-1.2</td>
-        <td>System shall support create, read, update, and delete for vendor
-          records.</td>
-      </tr>
-      <tr>
-        <td>FR-1.3</td>
-        <td>Vendor detail page shall display assigned parts with unit prices and
-          support assign/remove/update price.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="fr-2-parts-catalog">FR-2: Parts Catalog</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-2.1</td>
-        <td>System shall maintain a parts catalog with unique normalized
-          names.</td>
-      </tr>
-      <tr>
-        <td>FR-2.2</td>
-        <td>Parts shall support category-based structured specifications
-          (JSON).</td>
-      </tr>
-      <tr>
-        <td>FR-2.3</td>
-        <td>System shall parse free-text descriptions from Excel imports into
-          structured specs.</td>
-      </tr>
-      <tr>
-        <td>FR-2.4</td>
-        <td>Parts shall support multiple catalog images.</td>
-      </tr>
-      <tr>
-        <td>FR-2.5</td>
-        <td>System shall provide paginated, searchable parts list with
-          spec-aware search.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="fr-3-products-and-boms">FR-3: Products and BOMs</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-3.1</td>
-        <td>Products shall have unique model codes and display names.</td>
-      </tr>
-      <tr>
-        <td>FR-3.2</td>
-        <td>System shall import BOM data from Excel (<code>.xlsx</code>) with
-          defined cell layout.</td>
-      </tr>
-      <tr>
-        <td>FR-3.3</td>
-        <td>Excel import shall extract embedded cell images (side, front,
-          bottom) to blob storage.</td>
-      </tr>
-      <tr>
-        <td>FR-3.4</td>
-        <td>Product detail page shall support manual BOM line add, edit, and
-          remove.</td>
-      </tr>
-      <tr>
-        <td>FR-3.5</td>
-        <td>BOM lines shall reference existing parts by selection.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="fr-4-vendor-purchase-orders">FR-4: Vendor Purchase Orders</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-4.1</td>
-        <td>System shall create vendor POs with at least one line item.</td>
-      </tr>
-      <tr>
-        <td>FR-4.2</td>
-        <td>PO lines shall only include parts assigned to the selected
-          vendor.</td>
-      </tr>
-      <tr>
-        <td>FR-4.3</td>
-        <td>All PO lines shall require a positive integer quantity and a
-          vendor-assigned unit price.</td>
-      </tr>
-      <tr>
-        <td>FR-4.4</td>
-        <td>Saving PO changes that alter lines shall create a new immutable
-          version.</td>
-      </tr>
-      <tr>
-        <td>FR-4.5</td>
-        <td>Saving without line changes shall not create a new version.</td>
-      </tr>
-      <tr>
-        <td>FR-4.6</td>
-        <td>Each version shall generate and store a PDF document.</td>
-      </tr>
-      <tr>
-        <td>FR-4.7</td>
-        <td>PDF shall include company name, vendor details, line items (name,
-          description, qty, unit price, line total), and grand total.</td>
-      </tr>
-      <tr>
-        <td>FR-4.8</td>
-        <td>PO detail page shall list all versions with download links.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="fr-5-bom-driven-po-generation">FR-5: BOM-Driven PO
-    Generation</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-5.1</td>
-        <td>System shall accept a build plan of product ID + build quantity
-          pairs.</td>
-      </tr>
-      <tr>
-        <td>FR-5.2</td>
-        <td>System shall aggregate part demand as
-          <code>BOM quantity × build quantity</code> across all products.
-        </td>
-      </tr>
-      <tr>
-        <td>FR-5.3</td>
-        <td>System shall resolve vendor per part: single vendor auto-selected;
-          multiple vendors flagged as ambiguous.</td>
-      </tr>
-      <tr>
-        <td>FR-5.4</td>
-        <td>System shall flag parts with no vendor assignment or missing unit
-          price.</td>
-      </tr>
-      <tr>
-        <td>FR-5.5</td>
-        <td>User shall be able to override vendor selection for ambiguous parts
-          before generation.</td>
-      </tr>
-      <tr>
-        <td>FR-5.6</td>
-        <td>Generation shall create one PO per vendor with deduplicated part
-          lines and summed quantities.</td>
-      </tr>
-      <tr>
-        <td>FR-5.7</td>
-        <td>Generation shall be blocked until all parts are resolved and
-          priced.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="fr-6-dashboard">FR-6: Dashboard</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-6.1</td>
-        <td>Dashboard shall display entity counts (vendors, parts, products,
-          vendor POs).</td>
-      </tr>
-      <tr>
-        <td>FR-6.2</td>
-        <td>Dashboard shall list the 5 most recently created vendor POs with
-          version and line count.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="fr-7-file-and-image-handling">FR-7: File and Image Handling</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>FR-7.1</td>
-        <td>System shall store PDFs, catalog images, and BOM images in Vercel
-          Blob when configured.</td>
-      </tr>
-      <tr>
-        <td>FR-7.2</td>
-        <td>System shall fall back to local filesystem storage in development
-          when blob token is absent.</td>
-      </tr>
-      <tr>
-        <td>FR-7.3</td>
-        <td>SKU Excel uploads shall be staged via API route with size
-          limits.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="non-functional-requirements">3.5 Non-Functional
-    Requirements</h3>
-  <h4 id="nfr-1-performance">NFR-1: Performance</h4>
-  <table>
-    <colgroup>
-      <col style="width: 16%" />
-      <col style="width: 52%" />
-      <col style="width: 32%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-        <th>Target</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-1.1</td>
-        <td>Page load time for list views</td>
-        <td>&lt; 2 seconds on standard broadband</td>
-      </tr>
-      <tr>
-        <td>NFR-1.2</td>
-        <td>Excel BOM import (single file, ~100 rows)</td>
-        <td>&lt; 30 seconds including image extraction</td>
-      </tr>
-      <tr>
-        <td>NFR-1.3</td>
-        <td>PDF generation per PO version</td>
-        <td>&lt; 10 seconds</td>
-      </tr>
-      <tr>
-        <td>NFR-1.4</td>
-        <td>Build plan preview</td>
-        <td>&lt; 5 seconds for up to 10 products</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="nfr-2-reliability-and-data-integrity">NFR-2: Reliability and
-    Data Integrity</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-2.1</td>
-        <td>PO version snapshots shall store unit prices at time of creation
-          (not live vendor prices).</td>
-      </tr>
-      <tr>
-        <td>NFR-2.2</td>
-        <td>Database shall enforce referential integrity via foreign keys and
-          cascade rules.</td>
-      </tr>
-      <tr>
-        <td>NFR-2.3</td>
-        <td>Part names shall be normalized to prevent duplicate catalog
-          entries.</td>
-      </tr>
-      <tr>
-        <td>NFR-2.4</td>
-        <td>PO line validation shall reject duplicate parts on the same PO.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="nfr-3-usability">NFR-3: Usability</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-3.1</td>
-        <td>UI shall be responsive and usable on desktop and tablet
-          viewports.</td>
-      </tr>
-      <tr>
-        <td>NFR-3.2</td>
-        <td>System shall provide toast notifications for success and error
-          feedback.</td>
-      </tr>
-      <tr>
-        <td>NFR-3.3</td>
-        <td>Destructive actions (delete) shall require confirmation.</td>
-      </tr>
-      <tr>
-        <td>NFR-3.4</td>
-        <td>Build plan preview shall clearly indicate unresolved parts with
-          actionable status badges.</td>
-      </tr>
-      <tr>
-        <td>NFR-3.5</td>
-        <td>Application shall support light and dark themes.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="nfr-4-security">NFR-4: Security</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-4.1</td>
-        <td>Database credentials and blob tokens shall be stored in environment
-          variables, not source code.</td>
-      </tr>
-      <tr>
-        <td>NFR-4.2</td>
-        <td>File upload endpoints shall enforce size and type restrictions.</td>
-      </tr>
-      <tr>
-        <td>NFR-4.3</td>
-        <td>Authentication and authorization are deferred to a future phase; v1
-          assumes trusted internal network access.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="nfr-5-maintainability">NFR-5: Maintainability</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-5.1</td>
-        <td>Codebase shall use TypeScript with strict type checking.</td>
-      </tr>
-      <tr>
-        <td>NFR-5.2</td>
-        <td>Business logic shall reside in service layer modules, separate from
-          UI components.</td>
-      </tr>
-      <tr>
-        <td>NFR-5.3</td>
-        <td>Database schema changes shall be managed via Prisma migrations.</td>
-      </tr>
-      <tr>
-        <td>NFR-5.4</td>
-        <td>Linting and formatting shall be enforced via Biome.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="nfr-6-deployability">NFR-6: Deployability</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-6.1</td>
-        <td>Application shall build and deploy on Vercel without custom
-          infrastructure.</td>
-      </tr>
-      <tr>
-        <td>NFR-6.2</td>
-        <td>Database shall use Neon serverless PostgreSQL with connection
-          pooling.</td>
-      </tr>
-      <tr>
-        <td>NFR-6.3</td>
-        <td><code>bun run lint &amp;&amp; bun run typecheck &amp;&amp; bun run build</code>
-          shall pass before deployment.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4 id="nfr-7-observability">NFR-7: Observability</h4>
-  <table>
-    <colgroup>
-      <col style="width: 23%" />
-      <col style="width: 76%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Requirement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>NFR-7.1</td>
-        <td>Smoke test script (<code>bun run smoke:vendor-po</code>) shall
-          validate PO create, version, and PDF flow.</td>
-      </tr>
-      <tr>
-        <td>NFR-7.2</td>
-        <td>Import operations shall return structured summaries (created,
-          updated, skipped rows).</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="environment-and-configuration">3.6 Environment and
-    Configuration</h3>
-  <table>
-    <colgroup>
-      <col style="width: 34%" />
-      <col style="width: 34%" />
-      <col style="width: 31%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Variable</th>
-        <th>Required</th>
-        <th>Purpose</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>DATABASE_URL</code></td>
-        <td>Yes</td>
-        <td>Neon PostgreSQL connection string</td>
-      </tr>
-      <tr>
-        <td><code>BLOB_READ_WRITE_TOKEN</code></td>
-        <td>No (prod: yes)</td>
-        <td>Vercel Blob for PDFs and images</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="api-and-integration-points">3.7 API and Integration Points</h3>
-  <table>
-    <colgroup>
-      <col style="width: 52%" />
-      <col style="width: 22%" />
-      <col style="width: 25%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Endpoint / Action</th>
-        <th>Method</th>
-        <th>Purpose</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>/api/sku-import/upload</code></td>
-        <td>POST</td>
-        <td>Stage Excel file for import</td>
-      </tr>
-      <tr>
-        <td><code>/api/sku-import/stage</code></td>
-        <td>POST</td>
-        <td>Process staged Excel import</td>
-      </tr>
-      <tr>
-        <td><code>/api/catalog-images/upload</code></td>
-        <td>POST</td>
-        <td>Upload catalog images</td>
-      </tr>
-      <tr>
-        <td><code>/api/catalog-images/[...path]</code></td>
-        <td>GET</td>
-        <td>Serve catalog images</td>
-      </tr>
-      <tr>
-        <td><code>/api/bom-images/[...path]</code></td>
-        <td>GET</td>
-        <td>Serve BOM line images</td>
-      </tr>
-      <tr>
-        <td><code>/api/pdf/[versionId]</code></td>
-        <td>GET</td>
-        <td>Download PO version PDF</td>
-      </tr>
-      <tr>
-        <td>Server Actions (<code>lib/actions/*</code>)</td>
-        <td>—</td>
-        <td>CRUD and business operations from UI</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <h2 id="project-timeline-gantt-chart">4. Project Timeline (Gantt
-    Chart)</h2>
-  <p>The timeline below reflects phased delivery from project kickoff
-    through v1 production release. Dates assume a start of <strong>1 July
-      2026</strong>.</p>
-  <figure>
-    <img src="diagrams/diagram-4.png" alt="diagram-4" />
-    <figcaption aria-hidden="true">diagram-4</figcaption>
-  </figure>
-  <h3 id="phase-summary">Phase Summary</h3>
-  <table>
-    <colgroup>
-      <col style="width: 17%" />
-      <col style="width: 25%" />
-      <col style="width: 35%" />
-      <col style="width: 20%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Phase</th>
-        <th>Duration</th>
-        <th>Deliverables</th>
-        <th>Target</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Phase 1: Foundation</strong></td>
-        <td>~3 weeks</td>
-        <td>DB schema, app shell, shared UI components, data tables</td>
-        <td>19 Jul 2026</td>
-      </tr>
-      <tr>
-        <td><strong>Phase 2: Master Data</strong></td>
-        <td>~4 weeks</td>
-        <td>Vendors, parts, products, Excel import, vendor-part pricing</td>
-        <td>16 Aug 2026</td>
-      </tr>
-      <tr>
-        <td><strong>Phase 3: Vendor POs</strong></td>
-        <td>~2.5 weeks</td>
-        <td>Manual PO CRUD, versioning, PDF export</td>
-        <td>6 Sep 2026</td>
-      </tr>
-      <tr>
-        <td><strong>Phase 4: BOM PO Generation</strong></td>
-        <td>~2 weeks</td>
-        <td>Build plan UI, demand preview, multi-vendor PO creation</td>
-        <td>13 Sep 2026</td>
-      </tr>
-      <tr>
-        <td><strong>Phase 5: Polish &amp; Release</strong></td>
-        <td>~2 weeks</td>
-        <td>Dashboard, QA, docs, production deployment</td>
-        <td>20 Sep 2026</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <h2 id="deliverables">5. Deliverables</h2>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 44%" />
-      <col style="width: 44%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Deliverable</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>D-1</td>
-        <td>Web application</td>
-        <td>Deployed Next.js app on Vercel</td>
-      </tr>
-      <tr>
-        <td>D-2</td>
-        <td>Database</td>
-        <td>Neon PostgreSQL with Prisma migrations</td>
-      </tr>
-      <tr>
-        <td>D-3</td>
-        <td>Source code</td>
-        <td>TypeScript codebase in <code>po-mgmt</code> repository</td>
-      </tr>
-      <tr>
-        <td>D-4</td>
-        <td>Documentation</td>
-        <td>README (setup, flows), this SOW</td>
-      </tr>
-      <tr>
-        <td>D-5</td>
-        <td>Operational scripts</td>
-        <td>SKU import CLI, smoke test, backfill utilities</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <h2 id="assumptions-and-dependencies">6. Assumptions and
-    Dependencies</h2>
-  <table>
-    <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 89%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Assumption / Dependency</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>A-1</td>
-        <td>Users have access to standard product BOM Excel templates with the
-          defined cell layout.</td>
-      </tr>
-      <tr>
-        <td>A-2</td>
-        <td>Neon PostgreSQL and Vercel accounts are provisioned for
-          deployment.</td>
-      </tr>
-      <tr>
-        <td>A-3</td>
-        <td>Vercel Blob storage is configured for production PDF and image
-          persistence.</td>
-      </tr>
-      <tr>
-        <td>A-4</td>
-        <td>v1 operates on a trusted internal network without
-          authentication.</td>
-      </tr>
-      <tr>
-        <td>A-5</td>
-        <td>Single currency (configured in money service) is sufficient for
-          v1.</td>
-      </tr>
-      <tr>
-        <td>A-6</td>
-        <td>Product BOMs are reference data; inventory and fulfillment are out
-          of scope.</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <h2 id="acceptance-criteria-v1-release">7. Acceptance Criteria (v1
-    Release)</h2>
-  <p>The project is accepted when:</p>
-  <ol type="1">
-    <li>All functional requirements (FR-1 through FR-7) are implemented and
-      verified.</li>
-    <li><code>bun run lint &amp;&amp; bun run typecheck &amp;&amp; bun run build</code>
-      passes without errors.</li>
-    <li><code>bun run smoke:vendor-po</code> completes successfully against
-      a test database.</li>
-    <li>Excel BOM import successfully processes a representative product
-      file.</li>
-    <li>Build plan PO generation creates correct POs grouped by vendor with
-      accurate quantities.</li>
-    <li>PO PDFs are generated, stored, and downloadable for every
-      version.</li>
-    <li>Application is deployed to Vercel with production database and blob
-      storage configured.</li>
-  </ol>
-  <hr />
-  <h2 id="future-enhancements-post-v1">8. Future Enhancements
-    (Post-v1)</h2>
-  <table>
-    <colgroup>
-      <col style="width: 43%" />
-      <col style="width: 56%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Priority</th>
-        <th>Enhancement</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>High</td>
-        <td>User authentication and role-based access (procurement
-          vs. engineering)</td>
-      </tr>
-      <tr>
-        <td>High</td>
-        <td>Email PO PDFs directly to vendor contacts</td>
-      </tr>
-      <tr>
-        <td>Medium</td>
-        <td>PO approval workflow before issuance</td>
-      </tr>
-      <tr>
-        <td>Medium</td>
-        <td>Multi-currency support</td>
-      </tr>
-      <tr>
-        <td>Medium</td>
-        <td>ERP / accounting system integration</td>
-      </tr>
-      <tr>
-        <td>Low</td>
-        <td>Inventory tracking and goods receipt against POs</td>
-      </tr>
-      <tr>
-        <td>Low</td>
-        <td>PO delivery status and fulfillment tracking</td>
-      </tr>
-    </tbody>
-  </table>
-  <hr />
-  <p><em>Document generated from the <code>po-mgmt</code> codebase and
-      project requirements. Last updated: 1 July 2026.</em></p>
+<header id="title-block-header">
+<h1 class="title">Statement of Work</h1>
+</header>
+<h1 id="statement-of-work-sow">Statement of Work (SOW)</h1>
+<h2 id="vendor-purchase-order-management-system">Vendor Purchase Order
+Management System</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Project</strong></td>
+<td>PO Management (<code>po-mgmt</code>)</td>
+</tr>
+<tr>
+<td><strong>Version</strong></td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><strong>Date</strong></td>
+<td>1 July 2026</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>In development</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This project delivers a web-based <strong>Vendor Purchase Order
+Management System</strong> for manufacturing operations. The system
+centralizes master data for vendors, parts, and products (with Bills of
+Materials), and enables procurement teams to create, version, and export
+vendor purchase orders as PDFs.</p>
+<p>The platform supports two procurement workflows:</p>
+<ol type="1">
+<li><strong>Manual PO creation</strong> — select a vendor, add part
+lines with quantities, and generate a versioned PDF.</li>
+<li><strong>BOM-driven PO generation</strong> — define a build plan
+(products × build quantities), aggregate part demand across BOMs,
+resolve vendor assignments and pricing, and generate one PO per
+vendor.</li>
+</ol>
+<figure>
+<img src="diagrams/diagram-1.png" alt="diagram-1" />
+<figcaption aria-hidden="true">diagram-1</figcaption>
+</figure>
+<hr />
+<h2 id="business-requirements-and-needs">2. Business Requirements and
+Needs</h2>
+<h3 id="business-context">2.1 Business Context</h3>
+<p>Manufacturing teams currently manage product BOMs in spreadsheets and
+create vendor purchase orders manually. This leads to:</p>
+<ul>
+<li><strong>Data fragmentation</strong> — vendor, part, and product
+information lives in disconnected Excel files.</li>
+<li><strong>Manual PO assembly</strong> — procurement staff must
+manually calculate quantities when building multiple products.</li>
+<li><strong>No audit trail</strong> — changes to purchase orders are not
+versioned or easily traceable.</li>
+<li><strong>Inconsistent part catalog</strong> — duplicate or
+inconsistently named parts across product lines.</li>
+</ul>
+<p>The system addresses these needs by providing a single source of
+truth for master data, automated demand aggregation from BOMs,
+vendor-scoped part pricing, and immutable versioned PO PDFs.</p>
+<h3 id="business-objectives">2.2 Business Objectives</h3>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 36%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Objective</th>
+<th>Success Metric</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BO-1</td>
+<td>Centralize vendor, part, and product master data</td>
+<td>All catalog data manageable in one application</td>
+</tr>
+<tr>
+<td>BO-2</td>
+<td>Reduce time to create vendor POs</td>
+<td>PO creation in minutes vs. manual spreadsheet work</td>
+</tr>
+<tr>
+<td>BO-3</td>
+<td>Enable bulk PO generation from production build plans</td>
+<td>One action produces POs grouped by vendor</td>
+</tr>
+<tr>
+<td>BO-4</td>
+<td>Maintain PO change history</td>
+<td>Every material change creates a new downloadable PDF version</td>
+</tr>
+<tr>
+<td>BO-5</td>
+<td>Support bulk catalog onboarding</td>
+<td>Excel BOM import creates products, parts, and BOM lines in one
+step</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scope">2.3 Scope</h3>
+<p><strong>In scope</strong></p>
+<ul>
+<li>Vendor, part, and product CRUD</li>
+<li>Structured part specifications by category (LED driver, PCB,
+fastener, etc.)</li>
+<li>Excel BOM import with embedded image extraction</li>
+<li>Manual product BOM editing</li>
+<li>Vendor–part assignment with per-vendor unit pricing</li>
+<li>Manual vendor PO creation and editing</li>
+<li>BOM-driven build plan PO generation with vendor resolution</li>
+<li>PO versioning with PDF export per version</li>
+<li>Dashboard with entity counts and recent PO activity</li>
+<li>Image storage for parts, products, and BOM line images</li>
+</ul>
+<h3 id="phase-summary">Phase Summary</h3>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 25%" />
+<col style="width: 35%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Deliverables</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 1: Foundation</strong></td>
+<td>~3 weeks</td>
+<td>DB schema, app shell, shared UI components, data tables</td>
+<td>19 Jul 2026</td>
+</tr>
+<tr>
+<td><strong>Phase 2: Master Data</strong></td>
+<td>~4 weeks</td>
+<td>Vendors, parts, products, Excel import, vendor-part pricing</td>
+<td>16 Aug 2026</td>
+</tr>
+<tr>
+<td><strong>Phase 3: Vendor POs</strong></td>
+<td>~2.5 weeks</td>
+<td>Manual PO CRUD, versioning, PDF export</td>
+<td>6 Sep 2026</td>
+</tr>
+<tr>
+<td><strong>Phase 4: BOM PO Generation</strong></td>
+<td>~2 weeks</td>
+<td>Build plan UI, demand preview, multi-vendor PO creation</td>
+<td>13 Sep 2026</td>
+</tr>
+<tr>
+<td><strong>Phase 5: Polish &amp; Release</strong></td>
+<td>~2 weeks</td>
+<td>Dashboard, QA, docs, production deployment</td>
+<td>20 Sep 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="sign-off">4. Sign-off</h2>
+<p>By signing below, both parties confirm agreement to the scope,
+timeline, and deliverables described in this Statement of Work.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Client</strong></th>
+<th><strong>Service Provider</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Organization</strong></td>
+<td>crestled.com</td>
+<td>xorora.com</td>
+</tr>
+<tr>
+<td><strong>Name</strong></td>
+<td>Sajjad Khan</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Title</strong></td>
+<td>CEO</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Signature</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Date</strong></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Document generated from the <code>po-mgmt</code> codebase and
+project requirements. Last updated: 1 July 2026.</em></p>
 </body>
-
 </html>
